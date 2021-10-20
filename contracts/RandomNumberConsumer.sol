@@ -2,15 +2,17 @@
 pragma solidity ^0.8.7;
 
 import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * THIS IS AN EXAMPLE CONTRACT WHICH USES HARDCODED VALUES FOR CLARITY.
  * PLEASE DO NOT USE THIS CODE IN PRODUCTION.
  */
-contract RandomNumberConsumer is VRFConsumerBase {
+contract RandomNumberConsumer is VRFConsumerBase, Ownable {
     
     bytes32 internal keyHash;
-    uint256 internal fee;
+    uint256 internal linkFee;
+    uint256 internal maticFee;
 
     mapping (bytes32 => Applicant) public applicants;
 
@@ -37,16 +39,18 @@ contract RandomNumberConsumer is VRFConsumerBase {
         )
     {
         keyHash = 0x6e75b569a01ef56d18cab6a8e71e6600d6ce853834d4a5748b720d06f878b3a4;
-        fee = 0.0001 * 10 ** 18; // 0.0001 LINK (Varies by network)
+        linkFee = 0.0001 * 10 ** 18; // 0.0001 LINK (Varies by network)
+        maticFee = 0.1 * 10 ** 18;
     }
     
 
     /** 
      * Requests randomness 
      */
-    function getRandomNumber(bytes4 _callBackSelector) public {
-        require(LINK.balanceOf(address(this)) >= fee, "Not enough LINK - fill contract with faucet");
-        bytes32 requestId = requestRandomness(keyHash, fee);
+    function getRandomNumber(bytes4 _callBackSelector) public payable {
+        require(msg.value >= maticFee, "Not enough Matic");
+        require(LINK.balanceOf(address(this)) >= linkFee, "Not enough LINK");
+        bytes32 requestId = requestRandomness(keyHash, linkFee);
         applicants[requestId] = Applicant(msg.sender, _callBackSelector, 0);
     }
 
@@ -70,8 +74,24 @@ contract RandomNumberConsumer is VRFConsumerBase {
         (bool success, bytes memory data) = contractAddress.call(abi.encodeWithSelector(selector, randomResult));
         emit Response(success, data);
     }
-
-    // function withdrawLink() external {} - Implement a withdraw function to avoid locking your LINK in the contract
-
-
+    
+    
+    // Implement a withdraw function to avoid locking your LINK in the contract
+    function withdrawLink() external onlyOwner {
+        address reciever = owner();
+        LINK.transfer(reciever, linkSupply());
+    }
+    
+    function withdrawMatic() external onlyOwner {
+        address payable reciever = payable(owner());
+        reciever.transfer(maticSupply());
+    }
+    
+    function linkSupply() public view returns(uint256){
+        return LINK.balanceOf(address(this));
+    }
+    
+    function maticSupply() public view returns(uint256){
+        return address(this).balance;
+    }
 }

@@ -55,7 +55,9 @@ contract Lottery{
         gateFee = _gateFee;
         commission = _commission;
         userLimit = _userLimit;
-        deadLine = block.timestamp + _timeLimit;
+        if (_timeLimit > 0) {
+            deadLine = block.timestamp + _timeLimit;
+        }
         owner = _owner;
         RNC = _RandomNumberConsumer;
         gateIsOpen = true;
@@ -65,19 +67,27 @@ contract Lottery{
 /////////////    modifiers    /////////////
     modifier enterance() {
         require(gateIsOpen, "game expired");
-        require(userCount < userLimit, "sold out.");
+        require(userLimit == 0 || userCount < userLimit, "sold out.");
         require(!userEntered[msg.sender], "signed in before.");
         _;
     }
 
     modifier diceActive() {
-        require(userCount == userLimit || block.timestamp >= deadLine, "reach time limit or user limit to activate dice");
+        if(userLimit > 0 && deadLine > 0) {
+            require(userCount == userLimit || block.timestamp >= deadLine, "reach time limit or user limit to activate dice");
+        } else if (userLimit > 0) {
+            require(userCount == userLimit, "reach user limit to activate dice");
+        } else if (deadLine > 0) {
+            require(block.timestamp >= deadLine, "you have to wait untill deadline pass");
+        } else {
+            require(msg.sender == owner, "only owner can call this function");
+        }
         gateIsOpen = false;
         _;
     }
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "caller is not the owner");
+        require(msg.sender == owner, "only owner can call this function");
         _;
     }
 
