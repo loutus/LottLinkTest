@@ -24,8 +24,8 @@ contract Lottery{
 ///////////// constants /////////////
     string public info;             //summary information about purpose of the game
     string public baseURI;          //source of visual side of game
-    uint256 public gateFee;         //price of every single card
-    uint256 public commission;      //the wage of contract owner
+    uint256 public gateFee;         //price of every single card in wei
+    uint256 public commission;      //the wage of contract owner in wei
     uint256 public userLimit;       //maximum number of users can sign in
     uint256 public deadLine;        //when getRandomNumber function unlocks (assuming not reach the quorum of users) 
     address public owner;           //owner of contract
@@ -36,7 +36,8 @@ contract Lottery{
     
 /////////////   events   /////////////
     event SignIn(address user);
-    event RollDice(bool success, bytes data);
+    event RNCFee(bool getFee, uint256 fee);
+    event RollDice(bool success, bytes32 requestId);
     event Win(uint256 index, address user, uint256 amount);
 
 ///////////// constructor /////////////
@@ -104,6 +105,11 @@ contract Lottery{
         prize = 0;
     }
 
+    function RNCfee() public view returns(uint256) {
+        (bool success, bytes memory result) = RNC.staticcall(abi.encodeWithSignature("appFee()"));
+        uint256 fee = abi.decode(result, (uint256));
+        return (fee);
+    }
 
 ///////////// external functions /////////////
 
@@ -116,7 +122,7 @@ contract Lottery{
         userEntered[msg.sender] = true;
         userCount++;
 
-        prize += msg.value * (100 - commission) / 100 ;
+        prize += (msg.value - commission) ;
 
         emit SignIn(msg.sender);
 
@@ -127,8 +133,9 @@ contract Lottery{
     // rollDice function will request RandomNumberConsumer for a 30 digits random number
     function rollDice() public diceActive {
         bytes4 selector = bytes4(keccak256(bytes("select(uint256)")));
-        (bool success, bytes memory data) = RNC.call(abi.encodeWithSignature("getRandomNumber()", selector));
-        emit RollDice(success, data);
+        (bool success, bytes memory data) = RNC.call{value:RNCfee()}(abi.encodeWithSignature("getRandomNumber()", selector));
+        bytes32 requestId = abi.decode(data, (bytes32));
+        emit RollDice(success, requestId);
     }
 
     // only RandomNumberConsumer can call this function
@@ -138,6 +145,11 @@ contract Lottery{
         winner = indexToAddr[randIndex];
         emit Win(randIndex, winner, prize);
         transferPrize();
+    }
+
+    // owner can upgrade RNC
+    function upgradeRNC(address _RandomNumberConsumer) public onlyOwner{
+        RNC = _RandomNumberConsumer;
     }
 
     // withdraw commission by owner of the contract

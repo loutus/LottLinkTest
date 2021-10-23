@@ -4,15 +4,12 @@ pragma solidity ^0.8.7;
 import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-/**
- * THIS IS AN EXAMPLE CONTRACT WHICH USES HARDCODED VALUES FOR CLARITY.
- * PLEASE DO NOT USE THIS CODE IN PRODUCTION.
- */
+
 contract RandomNumberConsumer is VRFConsumerBase, Ownable {
     
     bytes32 internal keyHash;
     uint256 internal linkFee;
-    uint256 internal maticFee;
+    uint256 public appFee;
 
     mapping (bytes32 => Applicant) public applicants;
 
@@ -22,45 +19,57 @@ contract RandomNumberConsumer is VRFConsumerBase, Ownable {
         uint256 randomResult;
     }
     
+    event Request(bytes32 requestId);
     event Response(bool success, bytes data);
 
     /**
      * Constructor inherits VRFConsumerBase
      * 
-     * Network: mumbai
-     * Chainlink VRF Coordinator address: 0x8C7382F9D8f56b33781fE506E897a4F1e2d17255
-     * LINK token address:                0x326C977E6efc84E512bB9C30f76E30c160eD06FB
-     * Key Hash: 0x6e75b569a01ef56d18cab6a8e71e6600d6ce853834d4a5748b720d06f878b3a4
+     * Network: Matic Mainnet
+     * Chainlink VRF Coordinator address: 0x3d2341ADb2D31f1c5530cDC622016af293177AE0
+     * LINK token address:                0xb0897686c545045aFc77CF20eC7A532E3120E0F1
+     * Key Hash: 0xf86195cf7690c55907b2b611ebb7343a6f649bff128701cc542f0569e2c549da
      */
     constructor() 
         VRFConsumerBase(
-            0x8C7382F9D8f56b33781fE506E897a4F1e2d17255, // VRF Coordinator
-            0x326C977E6efc84E512bB9C30f76E30c160eD06FB  // LINK Token
+            0x3d2341ADb2D31f1c5530cDC622016af293177AE0, // VRF Coordinator
+            0xb0897686c545045aFc77CF20eC7A532E3120E0F1  // LINK Token
         )
     {
-        keyHash = 0x6e75b569a01ef56d18cab6a8e71e6600d6ce853834d4a5748b720d06f878b3a4;
+        keyHash = 0xf86195cf7690c55907b2b611ebb7343a6f649bff128701cc542f0569e2c549da;
         linkFee = 0.0001 * 10 ** 18; // 0.0001 LINK (Varies by network)
-        maticFee = 0.1 * 10 ** 18;
+        appFee = 0.01 * 10 ** 18;
     }
     
 
-    /** 
-     * Requests randomness 
+    /**
+     1. check contract link supply
+     2. check applicant matic value
+     3. Request randomness
+     4. Record applicant information
+     5. emit request Id
+     6. return request Id
+     * RNC then responses to applicant corresponding to request Id
+     * applicant should provide a selector receiving the randomness
      */
-    function getRandomNumber(bytes4 _callBackSelector) public payable {
-        require(msg.value >= maticFee, "Not enough Matic");
+    function getRandomNumber(bytes4 _callBackSelector) public payable returns(bytes32 requestId){
         require(LINK.balanceOf(address(this)) >= linkFee, "Not enough LINK");
-        bytes32 requestId = requestRandomness(keyHash, linkFee);
+        require(msg.value >= appFee, "Not enough Matic");
+        requestId = requestRandomness(keyHash, linkFee);
         applicants[requestId] = Applicant(msg.sender, _callBackSelector, 0);
+        emit Request(requestId);
+        return requestId;
     }
 
     /**
      * Callback function used by VRF Coordinator
+     1. fulfill applicant last info (randomness)
+     2. response to the applicant request
      */
     function fulfillRandomness(bytes32 requestId, uint256 randomness) internal override {
         applicants[requestId].randomResult = randomness;
         Applicant memory app = applicants[requestId];
-        callBack(
+        response(
             app.contractAddress,
             app.callBackSelector,
             app.randomResult
@@ -68,30 +77,46 @@ contract RandomNumberConsumer is VRFConsumerBase, Ownable {
     }
 
     /**
-     * Callback function to the applicant contract
+     * Response function to the applicant contract
+     1. call back the selector provided by the applicant
+     2. emit Response
      */
-    function callBack(address contractAddress, bytes4 selector, uint256 randomResult) private {
+    function response(address contractAddress, bytes4 selector, uint256 randomResult) private {
         (bool success, bytes memory data) = contractAddress.call(abi.encodeWithSelector(selector, randomResult));
         emit Response(success, data);
     }
     
     
-    // Implement a withdraw function to avoid locking your LINK in the contract
-    function withdrawLink() external onlyOwner {
+    /**
+     * withdraw LINK function to avoid locking LINK in the contract
+     */
+    function withdrawLink(uint256 amount) external onlyOwner {
         address reciever = owner();
-        LINK.transfer(reciever, linkSupply());
+        LINK.transfer(reciever, amount);
     }
     
-    function withdrawMatic() external onlyOwner {
+
+    /**
+     * withdraw matic paid by applicants
+     * only owner can call this function
+     */
+    function withdrawCash() external onlyOwner {
         address payable reciever = payable(owner());
-        reciever.transfer(maticSupply());
+        reciever.transfer(totalSupply());
     }
     
+
+    /**
+     * return LINK supply of the contract
+     */
     function linkSupply() public view returns(uint256){
         return LINK.balanceOf(address(this));
     }
-    
-    function maticSupply() public view returns(uint256){
+
+    /**
+     * return MATIC supply of the contract
+     */
+    function totalSupply() public view returns(uint256){
         return address(this).balance;
     }
 }

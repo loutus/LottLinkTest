@@ -1,12 +1,18 @@
+const { ethers } = require("hardhat");
+
 async function main() {
     const [deployer] = await ethers.getSigners();
   
     console.log("Owner address:", deployer.address);
   
-    const Lottery = await ethers.getContractFactory("Lottery");
-    const LOTT = await Lottery.deploy();
+    const Consumer = await ethers.getContractFactory("RandomNumberConsumer");
+    const RNC = await Consumer.deploy();
+
+    // const Lottery = await ethers.getContractFactory("Lottery");
+    // const LOTT = await Lottery.deploy();
   
-    console.log("LOTTLINK Contract Address:", LOTT.address);
+    console.log("Consumer contract Address:", RNC.address);
+    // console.log("LOTTLINK Contract Address:", LOTT.address);
   }
   
   main()
