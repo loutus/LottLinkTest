@@ -20,23 +20,23 @@ contract RandomNumberConsumer is VRFConsumerBase, Ownable {
     }
     
     event Request(bytes32 requestId);
-    event Response(bool success, bytes data);
+    event Response(bytes data);
 
     /**
      * Constructor inherits VRFConsumerBase
      * 
-     * Network: Matic Mainnet
-     * Chainlink VRF Coordinator address: 0x3d2341ADb2D31f1c5530cDC622016af293177AE0
-     * LINK token address:                0xb0897686c545045aFc77CF20eC7A532E3120E0F1
-     * Key Hash: 0xf86195cf7690c55907b2b611ebb7343a6f649bff128701cc542f0569e2c549da
+     * Network: MATIC MAINNET
+     * Chainlink VRF Coordinator address: 0x8C7382F9D8f56b33781fE506E897a4F1e2d17255
+     * LINK token address:                0x326C977E6efc84E512bB9C30f76E30c160eD06FB
+     * Key Hash: 0x6e75b569a01ef56d18cab6a8e71e6600d6ce853834d4a5748b720d06f878b3a4
      */
     constructor() 
         VRFConsumerBase(
-            0x3d2341ADb2D31f1c5530cDC622016af293177AE0, // VRF Coordinator
-            0xb0897686c545045aFc77CF20eC7A532E3120E0F1  // LINK Token
+            0x8C7382F9D8f56b33781fE506E897a4F1e2d17255, // VRF Coordinator
+            0x326C977E6efc84E512bB9C30f76E30c160eD06FB  // LINK Token
         )
     {
-        keyHash = 0xf86195cf7690c55907b2b611ebb7343a6f649bff128701cc542f0569e2c549da;
+        keyHash = 0x6e75b569a01ef56d18cab6a8e71e6600d6ce853834d4a5748b720d06f878b3a4;
         linkFee = 0.0001 * 10 ** 18; // 0.0001 LINK (Varies by network)
         appFee = 0.01 * 10 ** 18;
     }
@@ -44,7 +44,7 @@ contract RandomNumberConsumer is VRFConsumerBase, Ownable {
 
     /**
      1. check contract link supply
-     2. check applicant matic value
+     2. check applicant MATIC value
      3. Request randomness
      4. Record applicant information
      5. emit request Id
@@ -54,7 +54,7 @@ contract RandomNumberConsumer is VRFConsumerBase, Ownable {
      */
     function getRandomNumber(bytes4 _callBackSelector) public payable returns(bytes32 requestId){
         require(LINK.balanceOf(address(this)) >= linkFee, "Not enough LINK");
-        require(msg.value >= appFee, "Not enough Matic");
+        require(msg.value >= appFee, "Not enough MATIC");
         requestId = requestRandomness(keyHash, linkFee);
         applicants[requestId] = Applicant(msg.sender, _callBackSelector, 0);
         emit Request(requestId);
@@ -83,7 +83,8 @@ contract RandomNumberConsumer is VRFConsumerBase, Ownable {
      */
     function response(address contractAddress, bytes4 selector, uint256 randomResult) private {
         (bool success, bytes memory data) = contractAddress.call(abi.encodeWithSelector(selector, randomResult));
-        emit Response(success, data);
+        require(success, "Could Not Response Randomness");
+        emit Response(data);
     }
     
     
@@ -97,7 +98,7 @@ contract RandomNumberConsumer is VRFConsumerBase, Ownable {
     
 
     /**
-     * withdraw matic paid by applicants
+     * withdraw MATIC paid by applicants
      * only owner can call this function
      */
     function withdrawCash() external onlyOwner {

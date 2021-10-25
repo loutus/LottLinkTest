@@ -11,12 +11,13 @@ pragma solidity ^0.8.7;
 //  ================ Open source smart contract on EVM =================
 //   =============== Verify Random Function by ChanLink ===============
 
-contract Lottery{
+contract ChanceRoom{
 
     address RNC;                    //random number consumer address
 
 ///////////// variables /////////////
     bool gateIsOpen;                //the contract is open and active now
+    uint256 public RNCwithhold;       //withhold cash to activate RNC
     uint256 public userCount;       //number of users signed in till this moment
     uint256 public prize;           //the prize winner wins
     address public winner;          //winner of the game
@@ -31,13 +32,12 @@ contract Lottery{
     address public owner;           //owner of contract
     
 /////////////  mappings  /////////////
-    mapping (uint256 => address) indexToAddr;
-    mapping (address => bool) userEntered;
+    mapping (uint256 => address) public indexToAddr;
+    mapping (address => bool) public userEntered;
     
 /////////////   events   /////////////
     event SignIn(address user);
-    event RNCFee(bool getFee, uint256 fee);
-    event RollDice(bool success, bytes32 requestId);
+    event RollDice(bytes32 requestId);
     event Win(uint256 index, address user, uint256 amount);
 
 ///////////// constructor /////////////
@@ -45,7 +45,7 @@ contract Lottery{
         string memory _info,
         string memory _baseURI,
         uint256 _gateFee,
-        uint256 _commission,
+        uint256 _percentCommission,
         uint256 _userLimit,
         uint256 _timeLimit,
         address _owner,
@@ -54,7 +54,7 @@ contract Lottery{
         info = _info;
         baseURI = _baseURI;
         gateFee = _gateFee;
-        commission = _commission;
+        commission = gateFee * _percentCommission / 100;
         userLimit = _userLimit;
         if (_timeLimit > 0) {
             deadLine = block.timestamp + _timeLimit;
@@ -73,7 +73,8 @@ contract Lottery{
         _;
     }
 
-    modifier diceActive() {
+    modifier canRoll() {
+        require(RNCwithhold == RNCfee(), "not enough RNC withhold");
         if(userLimit > 0 && deadLine > 0) {
             require(userCount == userLimit || block.timestamp >= deadLine, "reach time limit or user limit to activate dice");
         } else if (userLimit > 0) {
@@ -81,9 +82,9 @@ contract Lottery{
         } else if (deadLine > 0) {
             require(block.timestamp >= deadLine, "you have to wait untill deadline pass");
         } else {
+
             require(msg.sender == owner, "only owner can call this function");
         }
-        gateIsOpen = false;
         _;
     }
 
@@ -98,23 +99,53 @@ contract Lottery{
     }
 
 
-///////////// internal functions /////////////
+///////////// Sub Functions /////////////
+
+    function RNCfee() public view returns(uint256) {
+        (bool success, bytes memory result) = RNC.staticcall(abi.encodeWithSignature("appFee()"));
+        require(success);
+        uint256 fee = abi.decode(result, (uint256));
+        return (fee);
+    }
+
+    function withdrawableSupply() public view returns(uint256){
+        uint256 unavailable = RNCwithhold + prize;
+        return address(this).balance - unavailable;
+    }
+
+    function deductRNCwithhold(uint256 value) private returns(uint256){
+        uint256 requiredAmount = RNCfee() - RNCwithhold;
+        if(requiredAmount > 0){
+            if(requiredAmount >= value){
+                RNCwithhold += value;
+                value = 0;
+            }else{
+                RNCwithhold += requiredAmount;
+                value -= requiredAmount;
+            }
+        }
+        return value;
+    }
+
+    function collectPrize(uint256 value) private {
+        if(value > commission) {
+            value -= commission;
+            prize += value;
+        }
+    }
+
     function transferPrize() private {
         address payable reciever = payable(winner);
         reciever.transfer(prize);
         prize = 0;
     }
 
-    function RNCfee() public view returns(uint256) {
-        (bool success, bytes memory result) = RNC.staticcall(abi.encodeWithSignature("appFee()"));
-        uint256 fee = abi.decode(result, (uint256));
-        return (fee);
-    }
 
-///////////// external functions /////////////
+///////////// Main Functions /////////////
 
-    // every person can enter lottery by paying gate fee
-    // commission will be deducted from msg.value and the rest of payment directly deposit to prize
+    // every person can enter ChanceRoom by paying gate fee
+    // RNC withhold and commission will be deducted from incoming value
+    // the rest of payment directly deposits to prize variable
     function signIn() public enterance payable{
         require(msg.value == gateFee, "Wrong card fee entered");
 
@@ -122,7 +153,8 @@ contract Lottery{
         userEntered[msg.sender] = true;
         userCount++;
 
-        prize += (msg.value - commission) ;
+        uint256 available = deductRNCwithhold(msg.value);
+        collectPrize(available);
 
         emit SignIn(msg.sender);
 
@@ -130,12 +162,16 @@ contract Lottery{
     }
 
     // rollDice can be called whenever deadline passed or number of users reached the qourum
+    // if deadline and user limit have been set to zero, only owner of the contract can roll the dice
     // rollDice function will request RandomNumberConsumer for a 30 digits random number
-    function rollDice() public diceActive {
+    function rollDice() public canRoll {
+        gateIsOpen = false;
         bytes4 selector = bytes4(keccak256(bytes("select(uint256)")));
-        (bool success, bytes memory data) = RNC.call{value:RNCfee()}(abi.encodeWithSignature("getRandomNumber()", selector));
-        bytes32 requestId = abi.decode(data, (bytes32));
-        emit RollDice(success, requestId);
+        (bool success, bytes memory data) = RNC.call{value:RNCwithhold}
+            (abi.encodeWithSignature("getRandomNumber(bytes4)", selector));
+        require(success, "RNC Call Failed");
+        RNCwithhold = 0;
+        emit RollDice(abi.decode(data, (bytes32)));
     }
 
     // only RandomNumberConsumer can call this function
@@ -147,21 +183,26 @@ contract Lottery{
         transferPrize();
     }
 
-    // owner can upgrade RNC
+    // withdraw commission by owner of the contract
+    function withdrawCommission() public onlyOwner {
+        address payable reciever = payable(owner);
+        reciever.transfer(withdrawableSupply());
+    }
+
+
+///////////// Assurance Functions /////////////
+
+    // owner can upgrade RNC in special cases
     function upgradeRNC(address _RandomNumberConsumer) public onlyOwner{
         RNC = _RandomNumberConsumer;
     }
+    
+    // charge contract in special cases  
+    function charge() public payable{}
 
-    // withdraw commission by owner of the contract
-    function withdrawCommission() public onlyOwner {
-        uint256 amount = address(this).balance - prize;
-        address payable reciever = payable(owner);
-        reciever.transfer(amount);
-    }
-
-    // cancel the game and get back user payments
+    // cancel the game and transfer user payments back
     function cancel() public onlyOwner {
-        require(address(this).balance >= userCount * gateFee, "not enogh cash to pay users");
+        require(address(this).balance >= userCount * gateFee, "not enough cash to pay users");
         for(uint256 index = 0; index < userCount; index++) {
             address payable reciever = payable(indexToAddr[index]);
             reciever.transfer(gateFee);
