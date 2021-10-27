@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
+// ======================================================================
+//   ██       ██████  ████████ ████████    ██      ██ ███    ██ ██   ██
+//   ██      ██    ██    ██       ██       ██      ██ ████   ██ ██  ██
+//   ██      ██    ██    ██       ██       ██      ██ ██ ██  ██ █████
+//   ██      ██    ██    ██       ██       ██      ██ ██  ██ ██ ██  ██
+//   ███████  ██████     ██       ██    ██ ███████ ██ ██   ████ ██   ██    
+// ======================================================================
+//  ================ Open source smart contract on EVM =================
+//   =============== Verify Random Function by ChanLink ===============
+
 import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 

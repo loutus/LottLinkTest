@@ -20,4 +20,3 @@ module.exports = {
     apiKey: `${POLYGONSCAN_API_KEY}`
   },
 };
- 

@@ -11,18 +11,20 @@ pragma solidity ^0.8.7;
 //  ================ Open source smart contract on EVM =================
 //   =============== Verify Random Function by ChanLink ===============
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
+import "./Register.sol";
 import "./ChanceRoom.sol";
 
-contract Factory is Ownable{
+contract Factory is Register{
     using Clones for address;
 
     address public chanceRoomLibrary;           //Source code clonable for chance rooms
     address public randomNumberConsumer;        //Random number consumer which new chance room will use
-    ChanceRoom[] chanceRooms;                //List of chance rooms has been cloned
+    ChanceRoom[] chanceRooms;                
 
     event NewChanceRoom(address chanceRoom, address owner);
+    event RandomNumberConsumerUpdated(address newConsumer, address updater);
+    event ChanceRoomLibraryUpdated(address newLibrary, address updater);
 
     constructor(
         address _randomNumberConsumer,
@@ -32,18 +34,30 @@ contract Factory is Ownable{
         newChanceRoomLibrary(_chanceRoomLibrary);
     }
 
+
+    //Returns list of chance rooms has been cloned
     function chanceroomsList() public view returns(ChanceRoom[] memory) {
         return chanceRooms;
     }
 
-    function newChanceRoomLibrary(address _chanceRoomLibrary) public onlyOwner {
+
+    //Upgrade chance room library by Admin
+    function newChanceRoomLibrary(address _chanceRoomLibrary) public {
+        require(hasRole(ADMIN_ROLE, _msgSender()), "must have Admin role to call this function");
         chanceRoomLibrary = _chanceRoomLibrary;
+        emit ChanceRoomLibraryUpdated(chanceRoomLibrary, _msgSender());
     }
 
-    function newRandomNumberConsumer(address _randomNumberConsumer) public onlyOwner {
+
+    //Upgrade random number consumer by Admin
+    function newRandomNumberConsumer(address _randomNumberConsumer) public {
+        require(hasRole(ADMIN_ROLE, _msgSender()), "must have Admin role to call this function");
         randomNumberConsumer = _randomNumberConsumer;
+        emit RandomNumberConsumerUpdated(randomNumberConsumer, _msgSender());
     }
 
+
+    //Clone a new chance room by VIP user
     function newChanceRoom(
         string memory info,
         string memory baseURI,
@@ -52,6 +66,7 @@ contract Factory is Ownable{
         uint256 userLimit,
         uint256 timeLimit
     ) public {
+        require(hasRole(CLONER_ROLE, _msgSender()), "must have Admin role to call this function");
         address chanceRoomAddress = chanceRoomLibrary.clone();
         ChanceRoom chanceRoom = ChanceRoom(chanceRoomAddress);
         chanceRoom.initialize(
@@ -61,10 +76,10 @@ contract Factory is Ownable{
             percentCommission,
             userLimit,
             timeLimit,
-            msg.sender,
+            _msgSender(),
             randomNumberConsumer
         );
         chanceRooms.push(chanceRoom);
-        emit NewChanceRoom(chanceRoomAddress, msg.sender);
+        emit NewChanceRoom(chanceRoomAddress, _msgSender());
     }
 }
