@@ -11,25 +11,27 @@ pragma solidity ^0.8.7;
 //  ================ Open source smart contract on EVM =================
 //   =============== Verify Random Function by ChanLink ===============
 
-contract ChanceRoom{
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
-    address RNC;                    //random number consumer address
-
-///////////// variables /////////////
-    bool gateIsOpen;                //the contract is open and active now
-    uint256 public RNCwithhold;       //withhold cash to activate RNC
-    uint256 public userCount;       //number of users signed in till this moment
-    uint256 public prize;           //the prize winner wins
-    address public winner;          //winner of the game
+contract ChanceRoom is Initializable{
 
 ///////////// constants /////////////
-    string public info;             //summary information about purpose of the game
-    string public baseURI;          //source of visual side of game
+    string public info;             //summary information about purpose of the room
+    string public baseURI;          //source of visual side of room
     uint256 public gateFee;         //price of every single card in wei
     uint256 public commission;      //the wage of contract owner in wei
     uint256 public userLimit;       //maximum number of users can sign in
     uint256 public deadLine;        //when getRandomNumber function unlocks (assuming not reach the quorum of users) 
     address public owner;           //owner of contract
+    address public RNC;             //random number consumer address
+
+///////////// variables /////////////
+    bool gateIsOpen;                //the contract is open and active now
+    string public status;           //status of the room
+    uint256 public RNCwithhold;     //withhold cash to activate RNC
+    uint256 public userCount;       //number of users signed in till this moment
+    uint256 public prize;           //the prize winner wins
+    address public winner;          //winner of the room
     
 /////////////  mappings  /////////////
     mapping (uint256 => address) public indexToAddr;
@@ -40,8 +42,9 @@ contract ChanceRoom{
     event RollDice(bytes32 requestId);
     event Win(uint256 index, address user, uint256 amount);
 
-///////////// constructor /////////////
-    constructor(
+
+///////////// initializer /////////////
+    function initialize(
         string memory _info,
         string memory _baseURI,
         uint256 _gateFee,
@@ -50,7 +53,7 @@ contract ChanceRoom{
         uint256 _timeLimit,
         address _owner,
         address _RandomNumberConsumer
-        ){
+        ) public initializer {
         info = _info;
         baseURI = _baseURI;
         gateFee = _gateFee;
@@ -62,12 +65,13 @@ contract ChanceRoom{
         owner = _owner;
         RNC = _RandomNumberConsumer;
         gateIsOpen = true;
+        status = "open and active";
     }
 
 
 /////////////    modifiers    /////////////
     modifier enterance() {
-        require(gateIsOpen, "game expired");
+        require(gateIsOpen, "room expired");
         require(userLimit == 0 || userCount < userLimit, "sold out.");
         require(!userEntered[msg.sender], "signed in before.");
         _;
@@ -82,7 +86,6 @@ contract ChanceRoom{
         } else if (deadLine > 0) {
             require(block.timestamp >= deadLine, "you have to wait untill deadline pass");
         } else {
-
             require(msg.sender == owner, "only owner can call this function");
         }
         _;
@@ -100,6 +103,18 @@ contract ChanceRoom{
 
 
 ///////////// Sub Functions /////////////
+
+    function secondsLeftToRollDice() public view returns(uint256 _secondsLeft) {
+        if(deadLine > block.timestamp) {
+            return deadLine - block.timestamp;
+        } else {return 0;}
+    }
+
+    function usersNumberToRollDice() public view returns(uint256 _usersNeeded) {
+        if(userLimit > userCount) {
+            return userLimit - userCount;
+        } else {return 0;}
+    }
 
     function RNCfee() public view returns(uint256) {
         (bool success, bytes memory result) = RNC.staticcall(abi.encodeWithSignature("appFee()"));
@@ -158,7 +173,10 @@ contract ChanceRoom{
 
         emit SignIn(msg.sender);
 
-        if(userCount == userLimit){gateIsOpen = false;}
+        if(userCount == userLimit){
+            gateIsOpen = false;
+            status = "Number of users has reach the quorum.";
+        }
     }
 
     // rollDice can be called whenever deadline passed or number of users reached the qourum
@@ -172,6 +190,7 @@ contract ChanceRoom{
         require(success, "RNC Call Failed");
         RNCwithhold = 0;
         emit RollDice(abi.decode(data, (bytes32)));
+        status = "waiting for random number...";
     }
 
     // only RandomNumberConsumer can call this function
@@ -181,6 +200,7 @@ contract ChanceRoom{
         winner = indexToAddr[randIndex];
         emit Win(randIndex, winner, prize);
         transferPrize();
+        status = "Finished.";
     }
 
     // withdraw commission by owner of the contract
@@ -192,7 +212,7 @@ contract ChanceRoom{
 
 ///////////// Assurance Functions /////////////
 
-    // owner can upgrade RNC in special cases
+    // owner can upgrade RNC in special cases (maybe not safe...)
     function upgradeRNC(address _RandomNumberConsumer) public onlyOwner{
         RNC = _RandomNumberConsumer;
     }
@@ -200,7 +220,7 @@ contract ChanceRoom{
     // charge contract in special cases  
     function charge() public payable{}
 
-    // cancel the game and transfer user payments back
+    // cancel the room and transfer user payments back
     function cancel() public onlyOwner {
         require(address(this).balance >= userCount * gateFee, "not enough cash to pay users");
         for(uint256 index = 0; index < userCount; index++) {
@@ -209,5 +229,6 @@ contract ChanceRoom{
         }
         prize = 0;
         gateIsOpen = false;
+        status = "Canceled.";
     }
 }
