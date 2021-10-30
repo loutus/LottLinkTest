@@ -5,6 +5,10 @@ async function main() {
   
     console.log("Owner address:", deployer.address);
 
+    const Register = await ethers.getContractFactory("Register");
+    const R = await Register.deploy();
+    console.log("Register Contract Address:", R.address);
+
     const Consumer = await ethers.getContractFactory("RandomNumberConsumer");
     const RNC = await Consumer.deploy();
     console.log("Random Number Consumer Contract Address:", RNC.address);
@@ -16,7 +20,7 @@ async function main() {
 
 
     const Factory = await ethers.getContractFactory("Factory");
-    const F = await Factory.deploy(RNC.address, ChR.address);
+    const F = await Factory.deploy(R.address, RNC.address, ChR.address);
     console.log("Factory Contract Address:", F.address);
   }
   

@@ -12,14 +12,18 @@ pragma solidity ^0.8.7;
 //   =============== Verify Random Function by ChanLink ===============
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Register.sol";
 import "./ChanceRoom.sol";
 
-contract Factory is Register{
+contract Factory is Ownable {
     using Clones for address;
 
+    address public registerContract;            //Register contract of all users
     address public chanceRoomLibrary;           //Source code clonable for chance rooms
     address public randomNumberConsumer;        //Random number consumer which new chance room will use
+
+    Register register;
     ChanceRoom[] chanceRooms;                
 
     event NewChanceRoom(address chanceRoom, address owner);
@@ -27,9 +31,12 @@ contract Factory is Register{
     event ChanceRoomLibraryUpdated(address newLibrary, address updater);
 
     constructor(
+        address _registerContract,
         address _randomNumberConsumer,
         address _chanceRoomLibrary
     ) {
+        registerContract = _registerContract;
+        register = Register(registerContract);
         newRandomNumberConsumer(_randomNumberConsumer);
         newChanceRoomLibrary(_chanceRoomLibrary);
     }
@@ -41,17 +48,15 @@ contract Factory is Register{
     }
 
 
-    //Upgrade chance room library by Admin
-    function newChanceRoomLibrary(address _chanceRoomLibrary) public {
-        require(hasRole(ADMIN_ROLE, _msgSender()), "must have Admin role to call this function");
+    //Upgrade chance room library by owner
+    function newChanceRoomLibrary(address _chanceRoomLibrary) public onlyOwner {
         chanceRoomLibrary = _chanceRoomLibrary;
         emit ChanceRoomLibraryUpdated(chanceRoomLibrary, _msgSender());
     }
 
 
-    //Upgrade random number consumer by Admin
-    function newRandomNumberConsumer(address _randomNumberConsumer) public {
-        require(hasRole(ADMIN_ROLE, _msgSender()), "must have Admin role to call this function");
+    //Upgrade random number consumer by owner
+    function newRandomNumberConsumer(address _randomNumberConsumer) public onlyOwner {
         randomNumberConsumer = _randomNumberConsumer;
         emit RandomNumberConsumerUpdated(randomNumberConsumer, _msgSender());
     }
@@ -66,7 +71,8 @@ contract Factory is Register{
         uint256 userLimit,
         uint256 timeLimit
     ) public {
-        require(hasRole(CLONER_ROLE, _msgSender()), "must have Admin role to call this function");
+        address cloner = _msgSender();
+        require(register.checkVIP(cloner), "Only VIP users can clone the contract.");
         address chanceRoomAddress = chanceRoomLibrary.clone();
         ChanceRoom chanceRoom = ChanceRoom(chanceRoomAddress);
         chanceRoom.initialize(
@@ -76,10 +82,10 @@ contract Factory is Register{
             percentCommission,
             userLimit,
             timeLimit,
-            _msgSender(),
+            cloner,
             randomNumberConsumer
         );
         chanceRooms.push(chanceRoom);
-        emit NewChanceRoom(chanceRoomAddress, _msgSender());
+        emit NewChanceRoom(chanceRoomAddress, cloner);
     }
 }
