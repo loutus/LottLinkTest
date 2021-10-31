@@ -57,7 +57,7 @@ interface IRegister {
      *
      * Emits a {SignIn} event.
      */
-    function signIn(string memory username) external payable;
+    function signIn(string memory username, address presenter) external payable;
 
     /**
      * @dev in addition to the username, every user can set additional personal info .
@@ -73,9 +73,7 @@ interface IRegister {
     function setInfo(string memory info) external;
 }
 
-abstract contract Register is IRegister, Ownable{
-
-    address[] addressList;
+contract Register is IRegister, Ownable{
 
     uint256 public puerNameFee;
     address public DAOContract;
@@ -89,6 +87,11 @@ abstract contract Register is IRegister, Ownable{
     mapping(address => User) addrToUser;
     mapping(string => address) userToAddr;
 
+
+    constructor(address _DAOAddress, uint256 _puerNameFee){
+        newDAOContract(_DAOAddress);
+        setPureNameFee(_puerNameFee);
+    }
 
     /**
      * @dev See {IRegister-userAddress}.
@@ -128,7 +131,6 @@ abstract contract Register is IRegister, Ownable{
 
         addrToUser[userAddr].username = username;
         userToAddr[username] = userAddr;
-        addressList.push(userAddr);
 
         emit SignIn(userAddr, username);
 
@@ -172,7 +174,7 @@ abstract contract Register is IRegister, Ownable{
     /**
      * @dev Set sign in fee for pure usernames.
      */
-    function setPureNameFee(uint256 _fee) external onlyOwner {
+    function setPureNameFee(uint256 _fee) public onlyOwner {
         puerNameFee = _fee;
     }
 
@@ -195,7 +197,7 @@ abstract contract Register is IRegister, Ownable{
     /**
      * @dev Chenge DAOContract by owner of the contract.
      */
-    function newDAOContract(address contractAddr) external onlyOwner {
+    function newDAOContract(address contractAddr) public onlyOwner {
         DAOContract = contractAddr;
     }
 }
