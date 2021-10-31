@@ -72,7 +72,7 @@ contract Factory is Ownable {
         uint256 timeLimit
     ) public {
         address cloner = _msgSender();
-        require(register.checkVIP(cloner), "Only VIP users can clone the contract.");
+        require(register.isVIP(cloner), "Only VIP users can clone the contract.");
         address chanceRoomAddress = chanceRoomLibrary.clone();
         ChanceRoom chanceRoom = ChanceRoom(chanceRoomAddress);
         chanceRoom.initialize(

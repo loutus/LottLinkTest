@@ -13,93 +13,97 @@ pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract Register is Ownable{
-
-    address[] addressList;
-
-    uint256 public VIPfee;
-
-    struct User{
-        string username;
-        string info;
-        bool isVIP;
-    }
-
-    mapping(address => User) public addrToUser;
-    mapping(string => address) public userToAddr;
+interface IRegister {
 
     event SignIn(address indexed userAddress, string username);
     event SetInfo(address indexed userAddress, string info);
 
+    function userAddress(string memory username) external view returns(address userAddr);
+    function userProfile(address userAddr) external view returns(string memory username, string memory info);
+    function signIn(string memory username) external payable;
+    function setInfo(string memory info) external;
+}
 
-///////////// Administration /////////////
+abstract contract Register is IRegister, Ownable{
 
-    // set sign in fee for VIP users
-    function setVIPfee(uint256 _fee) public onlyOwner {
-        VIPfee = _fee;
+    address[] addressList;
+
+    uint256 public usernameFee;
+    address public callableContract;
+
+    struct User{
+        string username;
+        string info;
     }
 
-    // withdraw supply by owner of the contract
-    function withdraw() public onlyOwner {
-        address payable reciever = payable(_msgSender());
-        reciever.transfer(address(this).balance);
+    mapping(address => User) addrToUser;
+    mapping(string => address) userToAddr;
+
+    event CallContract(bool success, bytes data);
+
+    function userAddress(string memory username) external view returns(address userAddr) {
+        require(userToAddr[username] != address(0), "no user by this address");
+        return userToAddr[username];
     }
 
-
-///////////// Login /////////////
-
-    function userInfo(address userAddr) public view returns(
+    function userProfile(address userAddr) external view returns(
         string memory username,
-        string memory info,
-        bool isVIP
-    ) {
+        string memory info
+    ){
+        require(bytes(addrToUser[userAddr].username).length != 0, "no user by this address");
         return(
             addrToUser[userAddr].username,
-            addrToUser[userAddr].info,
-            addrToUser[userAddr].isVIP
+            addrToUser[userAddr].info
         );
     }
 
-    function checkVIP(address userAddr) public view returns(bool){
-        return addrToUser[userAddr].isVIP;
+    function signIn(string memory username, address presenter) external payable {
+        address userAddr = _msgSender();
+        require(bytes(addrToUser[userAddr].username).length == 0, "this address has signed a username before");
+        require(bytes(username).length > 0, "empty username input");
+        require(userToAddr[username] == address(0), "this username has been used before");
+        if(bytes(username)[0] != bytes1("_")) {
+            require(msg.value >= usernameFee, "this username is Payable");
+        }
+        require(presenter != address(0) && presenter != userAddr, "wrong presenter address entered");
+
+        addrToUser[userAddr].username = username;
+        userToAddr[username] = userAddr;
+        addressList.push(userAddr);
+
+        emit SignIn(userAddr, username);
+
+        (bool success, bytes memory data) = callableContract.call
+            (abi.encodeWithSignature("doSomthing(address)", presenter));
+
+        emit CallContract(success, data);
     }
 
-    function signInVIP(
-        address presenter,
-        string memory username,
-        string memory info
-    ) public payable {
-        require(msg.value >= VIPfee, "this function is Payable");
-        signIn(presenter, username, info);
-        addrToUser[_msgSender()].isVIP = true;
-    }
-
-    function signIn(
-        address _presenter,
-        string memory _username,
-        string memory _info
-    ) public {
-        address _user = _msgSender();
-        require(bytes(addrToUser[_user].username).length == 0, "user has signed in before");
-        require(_presenter != address(0) && _presenter != _user, "wrong presenter address entered");
-        addressList.push(_user);
-        setUserName(_user, _username);
-        if(bytes(_info).length != 0) {setInfo(_info);}
-    }
-
-    function setUserName(address _user, string memory _username) internal {
-        require(userToAddr[_username] == address(0), "this username has been used before");
-        require(bytes(_username).length > 0, "set a username");
-        addrToUser[_user].username = _username;
-        userToAddr[_username] = _user;
-        emit SignIn(_user, _username);
-    }
-
-    function setInfo(string memory info) public {
-        address _user = _msgSender();
-        require(bytes(addrToUser[_user].username).length != 0, "you have to sign in first");
+    function setInfo(string memory info) external {
+        address userAddr = _msgSender();
+        require(bytes(addrToUser[userAddr].username).length != 0, "you have to sign in first");
         require(bytes(info).length != 0, "empty info");
-        addrToUser[_user].info = info;
-        emit SetInfo(_user, info);
+        addrToUser[userAddr].info = info;
+        emit SetInfo(userAddr, info);
+    }
+
+    function isVIP(address userAddr) external view returns(bool){
+        return bytes(addrToUser[userAddr].username).length != 0 
+        && bytes(addrToUser[userAddr].username)[0] != bytes1("_");
+    }
+
+    // set sign in fee for VIP usernames
+    function setUsernameFee(uint256 _fee) external onlyOwner {
+        usernameFee = _fee;
+    }
+
+    // withdraw supply by owner of the contract
+    function withdraw(address receiverAddress) external onlyOwner {
+        address payable receiver = payable(receiverAddress);
+        receiver.transfer(address(this).balance);
+    }
+
+    function newCallableContract(address contractAddr) external onlyOwner {
+        callableContract = contractAddr;
     }
 }
