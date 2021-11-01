@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-// ======================================================================
+// ============================ TEST_1.0.1 ==============================
 //   ██       ██████  ████████ ████████    ██      ██ ███    ██ ██   ██
 //   ██      ██    ██    ██       ██       ██      ██ ████   ██ ██  ██
 //   ██      ██    ██    ██       ██       ██      ██ ██ ██  ██ █████
@@ -13,7 +13,7 @@ pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./Register.sol";
+import "./IRegister.sol";
 import "./ChanceRoom.sol";
 
 contract Factory is Ownable {
@@ -23,7 +23,7 @@ contract Factory is Ownable {
     address public chanceRoomLibrary;           //Source code clonable for chance rooms
     address public randomNumberConsumer;        //Random number consumer which new chance room will use
 
-    Register register;
+    IRegister register;
     ChanceRoom[] chanceRooms;                
 
     event NewChanceRoom(address chanceRoom, address owner);
@@ -36,7 +36,7 @@ contract Factory is Ownable {
         address _chanceRoomLibrary
     ) {
         registerContract = _registerContract;
-        register = Register(registerContract);
+        register = IRegister(registerContract);
         newRandomNumberConsumer(_randomNumberConsumer);
         newChanceRoomLibrary(_chanceRoomLibrary);
     }

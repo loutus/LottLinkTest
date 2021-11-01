@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-// ======================================================================
+// ============================ TEST_1.0.1 ==============================
 //   ██       ██████  ████████ ████████    ██      ██ ███    ██ ██   ██
 //   ██      ██    ██    ██       ██       ██      ██ ████   ██ ██  ██
 //   ██      ██    ██    ██       ██       ██      ██ ██ ██  ██ █████
@@ -12,66 +12,7 @@ pragma solidity ^0.8.7;
 //   =============== Verify Random Function by ChanLink ===============
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-
-interface IRegister {
-
-    /**
-     * @dev Emitted when a new user signs in.
-     */
-    event SignIn(address indexed userAddress, string username);
-
-    /**
-     * @dev Emitted when user info sets or changes.
-     */
-    event SetInfo(address indexed userAddress, string info);
-
-    /**
-     * @dev Returns the address of the `username`.
-     *
-     * Requirements:
-     *
-     * - `username` must exist.
-     */
-    function userAddress(string memory username) external view returns(address userAddr);
-
-    /**
-     * @dev Returns the username and info of the `userAddr`.
-     *
-     * Requirements:
-     *
-     * - `userAddr` must be registered before.
-     */
-    function userProfile(address userAddr) external view returns(string memory username, string memory info);
-
-    /**
-     * @dev Sign in the Register contract by adopting a `username`.
-     *
-     * Pure usernames are payable but new user can sign in free by using `_` in first character of username.
-     *
-     * Requirements:
-     *
-     * - Every address can only sign in once and can't change its username.
-     * - Not allowed empty usernames.
-     * - Usernames are unique so new user has to adopt a username not used before.
-     * - new user must introduce a `presenter`.
-     *
-     * Emits a {SignIn} event.
-     */
-    function signIn(string memory username, address presenter) external payable;
-
-    /**
-     * @dev in addition to the username, every user can set additional personal info .
-     *
-     * To remove previously info, can be called by empty string input.
-     *
-     * Requirements:
-     *
-     * - The user has to register first.
-     *
-     * Emits a {SetInfo} event.
-     */
-    function setInfo(string memory info) external;
-}
+import "./IRegister.sol";
 
 contract Register is IRegister, Ownable{
 
@@ -84,8 +25,8 @@ contract Register is IRegister, Ownable{
         bool isVIP;
     }
 
-    mapping(address => User) addrToUser;
-    mapping(string => address) userToAddr;
+    mapping(address => User) public addrToUser;
+    mapping(string => address) public userToAddr;
 
 
     constructor(address _DAOAddress, uint256 _puerNameFee){
@@ -94,24 +35,81 @@ contract Register is IRegister, Ownable{
     }
 
     /**
-     * @dev See {IRegister-userAddress}.
+     * @dev See {IRegister-registered}.
      */
-    function userAddress(string memory username) external view returns(address userAddr) {
-        require(userToAddr[username] != address(0), "no user by this address");
+    function registered(address userAddr) public view returns(bool) {
+        return bytes(addrToUser[userAddr].username).length != 0;
+    }
+
+    /**
+     * @dev See {IRegister-registered}.
+     */
+    function registered(string memory username) public view returns(bool) {
+        return userToAddr[username] != address(0);
+    }
+
+    /**
+     * @dev See {IRegister-isPure}.
+     */
+    function isPure(address userAddr) external view returns(bool){
+        return registered(userAddr) 
+        && bytes(addrToUser[userAddr].username)[0] != bytes1("_");
+    }
+
+    /**
+     * @dev See {IRegister-isVIP}.
+     */
+    function isVIP(address userAddr) external view returns(bool){
+        return registered(userAddr)  
+        && addrToUser[userAddr].isVIP;
+    }
+
+    /**
+     * @dev See {IRegister-usernameToAddress}.
+     */
+    function usernameToAddress(string memory username) external view returns(address userAddr) {
+        require(registered(username), "no user by this username");
         return userToAddr[username];
     }
 
     /**
-     * @dev See {IRegister-userProfile}.
+     * @dev See {IRegister-addressToUsername}.
      */
-    function userProfile(address userAddr) external view returns(
+    function addressToUsername(address userAddr) external view returns(string memory username) {
+        require(registered(userAddr), "no user by this address");
+        return addrToUser[userAddr].username;
+    }
+
+    /**
+     * @dev See {IRegister-addressToProfile}.
+     */
+    function addressToProfile(address userAddr) external view returns(
         string memory username,
-        string memory info
+        string memory info,
+        bool VIPstatus
     ){
         require(registered(userAddr), "no user by this address");
         return(
             addrToUser[userAddr].username,
-            addrToUser[userAddr].info
+            addrToUser[userAddr].info,
+            addrToUser[userAddr].isVIP
+        );
+    }
+
+    /**
+     * @dev See {IRegister-usernameToProfile}.
+     */
+    function usernameToProfile(string memory username) external view returns(
+        address userAddr,
+        string memory info,
+        bool VIPstatus
+    ){
+        require(registered(username), "no user by this address");
+        userAddr = userToAddr[username];
+        return(
+            userAddr,
+            addrToUser[userAddr].info,
+            addrToUser[userAddr].isVIP
         );
     }
 
@@ -148,28 +146,6 @@ contract Register is IRegister, Ownable{
         emit SetInfo(userAddr, info);
     }
 
-    /**
-     * @dev Check if the user has been registered.
-     */
-    function registered(address userAddr) public view returns(bool) {
-        return bytes(addrToUser[userAddr].username).length != 0;
-    }
-
-    /**
-     * @dev Check if username is pure.
-     */
-    function isPure(address userAddr) external view returns(bool){
-        return registered(userAddr) 
-        && bytes(addrToUser[userAddr].username)[0] != bytes1("_");
-    }
-
-    /**
-     * @dev Check if the user is VIP.
-     */
-    function isVIP(address userAddr) external view returns(bool){
-        return registered(userAddr)  
-        && addrToUser[userAddr].isVIP;
-    }
 
     /**
      * @dev Set sign in fee for pure usernames.
