@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-// ============================ TEST_1.0.1 ==============================
+// ============================ TEST_1.0.3 ==============================
 //   ██       ██████  ████████ ████████    ██      ██ ███    ██ ██   ██
 //   ██      ██    ██    ██       ██       ██      ██ ████   ██ ██  ██
 //   ██      ██    ██    ██       ██       ██      ██ ██ ██  ██ █████
@@ -12,8 +12,11 @@ pragma solidity ^0.8.7;
 //   =============== Verify Random Function by ChanLink ===============
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "./IRNC.sol";
 
 contract ChanceRoom is Initializable{
+
+    IRNC RNC;
 
 ///////////// constants /////////////
     string public info;             //summary information about purpose of the room
@@ -23,7 +26,7 @@ contract ChanceRoom is Initializable{
     uint256 public userLimit;       //maximum number of users can sign in
     uint256 public deadLine;        //when getRandomNumber function unlocks (assuming not reach the quorum of users) 
     address public owner;           //owner of contract
-    address public RNC;             //random number consumer address
+    address public RNCAddress;      //random number consumer address
 
 ///////////// variables /////////////
     bool gateIsOpen;                //the contract is open and active now
@@ -63,7 +66,8 @@ contract ChanceRoom is Initializable{
             deadLine = block.timestamp + _timeLimit;
         }
         owner = _owner;
-        RNC = _RandomNumberConsumer;
+        RNCAddress = _RandomNumberConsumer;
+        RNC = IRNC(RNCAddress);
         gateIsOpen = true;
         status = "open and active";
     }
@@ -78,7 +82,7 @@ contract ChanceRoom is Initializable{
     }
 
     modifier canRoll() {
-        require(RNCwithhold == RNCfee(), "not enough RNC withhold");
+        require(RNCwithhold == RNC.generateFee(), "not enough RNC withhold");
         if(userLimit > 0 && deadLine > 0) {
             require(userCount == userLimit || block.timestamp >= deadLine, "reach time limit or user limit to activate dice");
         } else if (userLimit > 0) {
@@ -97,7 +101,7 @@ contract ChanceRoom is Initializable{
     }
 
     modifier onlyRNC() {
-        require(msg.sender == RNC, "caller is not the valid RNC");
+        require(msg.sender == RNCAddress, "caller is not the valid RNC");
         _;
     }
 
@@ -116,20 +120,13 @@ contract ChanceRoom is Initializable{
         } else {return 0;}
     }
 
-    function RNCfee() public view returns(uint256) {
-        (bool success, bytes memory result) = RNC.staticcall(abi.encodeWithSignature("appFee()"));
-        require(success);
-        uint256 fee = abi.decode(result, (uint256));
-        return (fee);
-    }
-
     function withdrawableSupply() public view returns(uint256){
         uint256 unavailable = RNCwithhold + prize;
         return address(this).balance - unavailable;
     }
 
     function deductRNCwithhold(uint256 value) private returns(uint256){
-        uint256 requiredAmount = RNCfee() - RNCwithhold;
+        uint256 requiredAmount = RNC.generateFee() - RNCwithhold;
         if(requiredAmount > 0){
             if(requiredAmount >= value){
                 RNCwithhold += value;
@@ -185,11 +182,9 @@ contract ChanceRoom is Initializable{
     function rollDice() public canRoll {
         gateIsOpen = false;
         bytes4 selector = bytes4(keccak256(bytes("select(uint256)")));
-        (bool success, bytes memory data) = RNC.call{value:RNCwithhold}
-            (abi.encodeWithSignature("getRandomNumber(bytes4)", selector));
-        require(success, "RNC Call Failed");
+        bytes32 requestId = RNC.getRandomNumber{value:RNCwithhold}(selector);
         RNCwithhold = 0;
-        emit RollDice(abi.decode(data, (bytes32)));
+        emit RollDice(requestId);
         status = "waiting for random number...";
     }
 
@@ -214,7 +209,8 @@ contract ChanceRoom is Initializable{
 
     // owner can upgrade RNC in special cases (maybe not safe...)
     function upgradeRNC(address _RandomNumberConsumer) public onlyOwner{
-        RNC = _RandomNumberConsumer;
+        RNCAddress = _RandomNumberConsumer;
+        RNC = IRNC(RNCAddress);
     }
     
     // charge contract in special cases  

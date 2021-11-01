@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-// ============================ TEST_1.0.1 ==============================
+// ============================ TEST_1.0.3 ==============================
 //   ██       ██████  ████████ ████████    ██      ██ ███    ██ ██   ██
 //   ██      ██    ██    ██       ██       ██      ██ ████   ██ ██  ██
 //   ██      ██    ██    ██       ██       ██      ██ ██ ██  ██ █████
@@ -13,13 +13,14 @@ pragma solidity ^0.8.7;
 
 import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./IRNC.sol";
 
 
-contract RandomNumberConsumer is VRFConsumerBase, Ownable {
+contract RandomNumberConsumer is IRNC, VRFConsumerBase, Ownable {
     
     bytes32 internal keyHash;
     uint256 internal linkFee;
-    uint256 public appFee;
+    uint256 internal appFee;
 
     mapping (bytes32 => Applicant) public applicants;
 
@@ -28,8 +29,16 @@ contract RandomNumberConsumer is VRFConsumerBase, Ownable {
         bytes4 callBackSelector;
         uint256 randomResult;
     }
-    
+
+    /**
+     * @dev Emitted when an applicant requests for randomness.
+     */
     event Request(bytes32 requestId);
+
+
+    /**
+     * @dev Emitted when RNC responses to the applicant.
+     */
     event Response(bytes data);
 
     /**
@@ -50,17 +59,18 @@ contract RandomNumberConsumer is VRFConsumerBase, Ownable {
         linkFee = 0.0001 * 10 ** 18; // 0.0001 LINK (Varies by network)
         appFee = 0.01 * 10 ** 18;
     }
-    
+
 
     /**
-     1. check contract link supply
-     2. check applicant MATIC value
-     3. Request randomness
-     4. Record applicant information
-     5. emit request Id
-     6. return request Id
-     * RNC then responses to applicant corresponding to request Id
-     * applicant should provide a selector receiving the randomness
+     * @dev See {IRNC-generateFee}.
+     */
+    function generateFee() external view returns(uint256 fee) {
+        return appFee;
+    }
+
+
+    /**
+     * @dev See {IRNC-getRandomNumber}.
      */
     function getRandomNumber(bytes4 _callBackSelector) public payable returns(bytes32 requestId){
         require(LINK.balanceOf(address(this)) >= linkFee, "Not enough LINK");
