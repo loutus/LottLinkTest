@@ -186,6 +186,11 @@
           "type": "string"
         },
         {
+          "internalType": "string",
+          "name": "info",
+          "type": "string"
+        },
+        {
           "internalType": "address",
           "name": "presenter",
           "type": "address"

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-// ============================ TEST_1.0.1 ==============================
+// ============================ TEST_1.0.2 ==============================
 //   ██       ██████  ████████ ████████    ██      ██ ███    ██ ██   ██
 //   ██      ██    ██    ██       ██       ██      ██ ████   ██ ██  ██
 //   ██      ██    ██    ██       ██       ██      ██ ██ ██  ██ █████
@@ -116,7 +116,7 @@ contract Register is IRegister, Ownable{
     /**
      * @dev See {IRegister-signIn}.
      */
-    function signIn(string memory username, address presenter) external payable {
+    function signIn(string memory username, string memory info, address presenter) external payable {
         address userAddr = _msgSender();
         require(!registered(userAddr) , "this address has signed a username before");
         require(bytes(username).length > 0, "empty username input");
@@ -132,6 +132,8 @@ contract Register is IRegister, Ownable{
 
         emit SignIn(userAddr, username);
 
+        if(bytes(info).length > 0) {setInfo(info);}
+
         (bool success, bytes memory data) = DAOContract.call
             (abi.encodeWithSignature("registerSign(address)", presenter));
     }
@@ -139,7 +141,7 @@ contract Register is IRegister, Ownable{
     /**
      * @dev See {IRegister-setInfo}.
      */
-    function setInfo(string memory info) external {
+    function setInfo(string memory info) public {
         address userAddr = _msgSender();
         require(registered(userAddr) , "you have to sign in first");
         addrToUser[userAddr].info = info;

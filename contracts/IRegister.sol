@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-// ============================ TEST_1.0.1 ==============================
+// ============================ TEST_1.0.2 ==============================
 //   ██       ██████  ████████ ████████    ██      ██ ███    ██ ██   ██
 //   ██      ██    ██    ██       ██       ██      ██ ████   ██ ██  ██
 //   ██      ██    ██    ██       ██       ██      ██ ██ ██  ██ █████
@@ -92,7 +92,7 @@ interface IRegister {
     );
 
     /**
-     * @dev Sign in the Register contract by adopting a `username`.
+     * @dev Sign in the Register contract by adopting a `username` and optional info if needed.
      *
      * Pure usernames are payable but new user can sign in free by using `_` in first character of username.
      *
@@ -105,7 +105,7 @@ interface IRegister {
      *
      * Emits a {SignIn} event.
      */
-    function signIn(string memory username, address presenter) external payable;
+    function signIn(string memory username, string memory info, address presenter) external payable;
 
     /**
      * @dev in addition to the username, every user can set additional personal info .
