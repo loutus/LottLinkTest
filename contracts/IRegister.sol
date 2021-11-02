@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-// ============================ TEST_1.0.2 ==============================
+// ============================ TEST_1.0.4 ==============================
 //   ██       ██████  ████████ ████████    ██      ██ ███    ██ ██   ██
 //   ██      ██    ██    ██       ██       ██      ██ ████   ██ ██  ██
 //   ██      ██    ██    ██       ██       ██      ██ ██ ██  ██ █████
@@ -95,17 +95,17 @@ interface IRegister {
      * @dev Sign in the Register contract by adopting a `username` and optional info if needed.
      *
      * Pure usernames are payable but new user can sign in free by using `_` in first character of username.
-     *
+     * new user can introduce a `presenter` username.
+     * 
      * Requirements:
      *
      * - Every address can only sign in once and can't change its username.
      * - Not allowed empty usernames.
      * - Usernames are unique so new user has to adopt a username not used before.
-     * - new user must introduce a `presenter`.
      *
      * Emits a {SignIn} event.
      */
-    function signIn(string memory username, string memory info, address presenter) external payable;
+    function signIn(string memory username, string memory info, string memory presenter) external payable;
 
     /**
      * @dev in addition to the username, every user can set additional personal info .

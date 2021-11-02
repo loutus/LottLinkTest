@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-// ============================ TEST_1.0.2 ==============================
+// ============================ TEST_1.0.4 ==============================
 //   ██       ██████  ████████ ████████    ██      ██ ███    ██ ██   ██
 //   ██      ██    ██    ██       ██       ██      ██ ████   ██ ██  ██
 //   ██      ██    ██    ██       ██       ██      ██ ██ ██  ██ █████
@@ -12,9 +12,12 @@ pragma solidity ^0.8.7;
 //   =============== Verify Random Function by ChanLink ===============
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./StringUtil.sol";
 import "./IRegister.sol";
 
 contract Register is IRegister, Ownable{
+
+    using StringUtil for string;
 
     uint256 public pureNameFee;
     address public DAOContract;
@@ -45,7 +48,7 @@ contract Register is IRegister, Ownable{
      * @dev See {IRegister-registered}.
      */
     function registered(string memory username) public view returns(bool) {
-        return userToAddr[username] != address(0);
+        return userToAddr[username.lower()] != address(0);
     }
 
     /**
@@ -67,9 +70,9 @@ contract Register is IRegister, Ownable{
     /**
      * @dev See {IRegister-usernameToAddress}.
      */
-    function usernameToAddress(string memory username) external view returns(address userAddr) {
+    function usernameToAddress(string memory username) public view returns(address userAddr) {
         require(registered(username), "no user by this username");
-        return userToAddr[username];
+        return userToAddr[username.lower()];
     }
 
     /**
@@ -104,8 +107,7 @@ contract Register is IRegister, Ownable{
         string memory info,
         bool VIPstatus
     ){
-        require(registered(username), "no user by this address");
-        userAddr = userToAddr[username];
+        userAddr = usernameToAddress(username);
         return(
             userAddr,
             addrToUser[userAddr].info,
@@ -116,26 +118,29 @@ contract Register is IRegister, Ownable{
     /**
      * @dev See {IRegister-signIn}.
      */
-    function signIn(string memory username, string memory info, address presenter) external payable {
+    function signIn(string memory username, string memory info, string memory presenter) external payable {
         address userAddr = _msgSender();
         require(!registered(userAddr) , "this address has signed a username before");
         require(bytes(username).length > 0, "empty username input");
-        require(userToAddr[username] == address(0), "this username has been used before");
-        require(presenter != address(0) && presenter != userAddr, "wrong presenter address entered");
+        require(!registered(username), "this username has been used before");
 
         if(bytes(username)[0] != bytes1("_")) {
             require(msg.value >= pureNameFee, "this username is Payable");
         }
 
         addrToUser[userAddr].username = username;
-        userToAddr[username] = userAddr;
+        userToAddr[username.lower()] = userAddr;
 
         emit SignIn(userAddr, username);
 
         if(bytes(info).length > 0) {setInfo(info);}
 
-        (bool success, bytes memory data) = DAOContract.call
-            (abi.encodeWithSignature("registerSign(address)", presenter));
+        address presenterAddr = userToAddr[presenter.lower()];
+        if(presenterAddr != address(0)){
+            (bool success, bytes memory data) = DAOContract.call
+                (abi.encodeWithSignature("registerSign(address)", presenterAddr
+                ));
+        }
     }
 
     /**

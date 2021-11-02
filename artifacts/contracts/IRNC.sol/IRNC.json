@@ -4,6 +4,19 @@
   "sourceName": "contracts/IRNC.sol",
   "abi": [
     {
+      "inputs": [],
+      "name": "generateFee",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "fee",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "bytes4",

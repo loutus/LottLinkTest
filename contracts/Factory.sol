@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-// ============================ TEST_1.0.1 ==============================
+// ============================ TEST_1.0.4 ==============================
 //   ██       ██████  ████████ ████████    ██      ██ ███    ██ ██   ██
 //   ██      ██    ██    ██       ██       ██      ██ ████   ██ ██  ██
 //   ██      ██    ██    ██       ██       ██      ██ ██ ██  ██ █████
@@ -24,7 +24,9 @@ contract Factory is Ownable {
     address public randomNumberConsumer;        //Random number consumer which new chance room will use
 
     IRegister register;
-    ChanceRoom[] chanceRooms;                
+    address[] public chanceRooms;
+
+    mapping (address => address[]) public creatorToRooms;                
 
     event NewChanceRoom(address chanceRoom, address owner);
     event RandomNumberConsumerUpdated(address newConsumer, address updater);
@@ -43,8 +45,16 @@ contract Factory is Ownable {
 
 
     //Returns list of chance rooms has been cloned
-    function chanceroomsList() public view returns(ChanceRoom[] memory) {
-        return chanceRooms;
+    function chanceRoomsCloned(int256 _length, int256 _offset) external view returns(address[] memory) {
+        assert(uint(_offset + _length) <= chanceRooms.length);
+
+        address[] memory _tmp = new address[](uint(_length));
+
+        uint j = 0;
+        for (uint i = uint(_offset); i < uint(_offset + _length); i++) {
+            _tmp[j++] = chanceRooms[i];
+        }
+        return _tmp;
     }
 
 
@@ -85,7 +95,8 @@ contract Factory is Ownable {
             cloner,
             randomNumberConsumer
         );
-        chanceRooms.push(chanceRoom);
+        creatorToRooms[cloner].push(chanceRoomAddress);
+        chanceRooms.push(chanceRoomAddress);
         emit NewChanceRoom(chanceRoomAddress, cloner);
     }
 }

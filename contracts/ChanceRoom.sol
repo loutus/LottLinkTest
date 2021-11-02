@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-// ============================ TEST_1.0.3 ==============================
+// ============================ TEST_1.0.4 ==============================
 //   ██       ██████  ████████ ████████    ██      ██ ███    ██ ██   ██
 //   ██      ██    ██    ██       ██       ██      ██ ████   ██ ██  ██
 //   ██      ██    ██    ██       ██       ██      ██ ██ ██  ██ █████
@@ -41,7 +41,7 @@ contract ChanceRoom is Initializable{
     mapping (address => bool) public userEntered;
     
 /////////////   events   /////////////
-    event SignIn(address user);
+    event BuySeat(address indexed user);
     event RollDice(bytes32 requestId);
     event Win(uint256 index, address user, uint256 amount);
 
@@ -109,8 +109,9 @@ contract ChanceRoom is Initializable{
 ///////////// Sub Functions /////////////
 
     function secondsLeftToRollDice() public view returns(uint256 _secondsLeft) {
-        if(deadLine > block.timestamp) {
-            return deadLine - block.timestamp;
+        uint256 timeNow = block.timestamp;
+        if(deadLine > timeNow) {
+            return deadLine - timeNow;
         } else {return 0;}
     }
 
@@ -158,17 +159,20 @@ contract ChanceRoom is Initializable{
     // every person can enter ChanceRoom by paying gate fee
     // RNC withhold and commission will be deducted from incoming value
     // the rest of payment directly deposits to prize variable
-    function signIn() public enterance payable{
-        require(msg.value == gateFee, "Wrong card fee entered");
+    function buySeat() public enterance payable{
+        address userAddress = msg.sender;
+        uint256 userPayment = msg.value;
 
-        indexToAddr[userCount] = msg.sender;
-        userEntered[msg.sender] = true;
+        require(userPayment == gateFee, "Wrong card fee entered");
+
+        indexToAddr[userCount] = userAddress;
+        userEntered[userAddress] = true;
+        emit BuySeat(userAddress);
+
         userCount++;
 
-        uint256 available = deductRNCwithhold(msg.value);
+        uint256 available = deductRNCwithhold(userPayment);
         collectPrize(available);
-
-        emit SignIn(msg.sender);
 
         if(userCount == userLimit){
             gateIsOpen = false;
