@@ -16,7 +16,7 @@ import "./IRegister.sol";
 
 contract Register is IRegister, Ownable{
 
-    uint256 public puerNameFee;
+    uint256 public pureNameFee;
     address public DAOContract;
 
     struct User{
@@ -29,9 +29,9 @@ contract Register is IRegister, Ownable{
     mapping(string => address) public userToAddr;
 
 
-    constructor(address _DAOAddress, uint256 _puerNameFee){
+    constructor(address _DAOAddress, uint256 _pureNameFee){
         newDAOContract(_DAOAddress);
-        setPureNameFee(_puerNameFee);
+        setPureNameFee(_pureNameFee);
     }
 
     /**
@@ -124,7 +124,7 @@ contract Register is IRegister, Ownable{
         require(presenter != address(0) && presenter != userAddr, "wrong presenter address entered");
 
         if(bytes(username)[0] != bytes1("_")) {
-            require(msg.value >= puerNameFee, "this username is Payable");
+            require(msg.value >= pureNameFee, "this username is Payable");
         }
 
         addrToUser[userAddr].username = username;
@@ -153,7 +153,7 @@ contract Register is IRegister, Ownable{
      * @dev Set sign in fee for pure usernames.
      */
     function setPureNameFee(uint256 _fee) public onlyOwner {
-        puerNameFee = _fee;
+        pureNameFee = _fee;
     }
 
     /**
