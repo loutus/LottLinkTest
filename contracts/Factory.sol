@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-// ============================ TEST_1.0.4 ==============================
+// ============================ TEST_1.0.5 ==============================
 //   ██       ██████  ████████ ████████    ██      ██ ███    ██ ██   ██
 //   ██      ██    ██    ██       ██       ██      ██ ████   ██ ██  ██
 //   ██      ██    ██    ██       ██       ██      ██ ██ ██  ██ █████
@@ -22,6 +22,7 @@ contract Factory is Ownable {
     address public registerContract;            //Register contract of all users
     address public chanceRoomLibrary;           //Source code clonable for chance rooms
     address public randomNumberConsumer;        //Random number consumer which new chance room will use
+    address public NFTContract;                 //ERC721 contract mints NFT for the winner
 
     IRegister register;
     address[] public chanceRooms;
@@ -29,17 +30,20 @@ contract Factory is Ownable {
     mapping (address => address[]) public creatorToRooms;                
 
     event NewChanceRoom(address chanceRoom, address owner);
-    event RandomNumberConsumerUpdated(address newConsumer, address updater);
-    event ChanceRoomLibraryUpdated(address newLibrary, address updater);
+    event RandomNumberConsumerUpdated(address newConsumer, uint256 updateTime);
+    event NFTContractUpdated(address newNFTContract, uint256 updateTime);
+    event ChanceRoomLibraryUpdated(address newLibrary, uint256 updateTime);
 
     constructor(
         address _registerContract,
         address _randomNumberConsumer,
+        address _NFTContractAddress,
         address _chanceRoomLibrary
     ) {
         registerContract = _registerContract;
         register = IRegister(registerContract);
         newRandomNumberConsumer(_randomNumberConsumer);
+        newNFTContract(_NFTContractAddress);
         newChanceRoomLibrary(_chanceRoomLibrary);
     }
 
@@ -58,17 +62,22 @@ contract Factory is Ownable {
     }
 
 
-    //Upgrade chance room library by owner
-    function newChanceRoomLibrary(address _chanceRoomLibrary) public onlyOwner {
-        chanceRoomLibrary = _chanceRoomLibrary;
-        emit ChanceRoomLibraryUpdated(chanceRoomLibrary, _msgSender());
-    }
-
-
     //Upgrade random number consumer by owner
     function newRandomNumberConsumer(address _randomNumberConsumer) public onlyOwner {
         randomNumberConsumer = _randomNumberConsumer;
-        emit RandomNumberConsumerUpdated(randomNumberConsumer, _msgSender());
+        emit RandomNumberConsumerUpdated(randomNumberConsumer, block.timestamp);
+    }
+
+    //Upgrade NFT contract by owner
+    function newNFTContract(address _NFTContractAddress) public onlyOwner {
+        NFTContract = _NFTContractAddress;
+        emit NFTContractUpdated(NFTContract, block.timestamp);
+    }
+
+    //Upgrade chance room library by owner
+    function newChanceRoomLibrary(address _chanceRoomLibrary) public onlyOwner {
+        chanceRoomLibrary = _chanceRoomLibrary;
+        emit ChanceRoomLibraryUpdated(chanceRoomLibrary, block.timestamp);
     }
 
 
@@ -93,7 +102,8 @@ contract Factory is Ownable {
             userLimit,
             timeLimit,
             cloner,
-            randomNumberConsumer
+            randomNumberConsumer,
+            NFTContract
         );
         creatorToRooms[cloner].push(chanceRoomAddress);
         chanceRooms.push(chanceRoomAddress);
