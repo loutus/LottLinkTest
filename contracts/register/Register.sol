@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-// ============================ TEST_1.0.4 ==============================
+// ============================ TEST_1.0.5 ==============================
 //   ██       ██████  ████████ ████████    ██      ██ ███    ██ ██   ██
 //   ██      ██    ██    ██       ██       ██      ██ ████   ██ ██  ██
 //   ██      ██    ██    ██       ██       ██      ██ ██ ██  ██ █████
@@ -12,7 +12,7 @@ pragma solidity ^0.8.7;
 //   =============== Verify Random Function by ChanLink ===============
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./StringUtil.sol";
+import "../utils/StringUtil.sol";
 import "./IRegister.sol";
 
 contract Register is IRegister, Ownable{
@@ -25,6 +25,7 @@ contract Register is IRegister, Ownable{
     struct User{
         string username;
         string info;
+        string DAOInfo;
         bool isVIP;
     }
 
@@ -139,7 +140,10 @@ contract Register is IRegister, Ownable{
         if(presenterAddr != address(0)){
             (bool success, bytes memory data) = DAOContract.call
                 (abi.encodeWithSignature("registerSign(address)", presenterAddr
-                ));
+            ));
+            if(success){
+                addrToUser[userAddr].DAOInfo = abi.decode(data, (string));
+            }
         }
     }
 

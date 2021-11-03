@@ -12,11 +12,13 @@ pragma solidity ^0.8.7;
 //   =============== Verify Random Function by ChanLink ===============
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "./IRNC.sol";
+import "./RNC/IRNC.sol";
+import "./ERC721/INFT.sol";
 
 contract ChanceRoom is Initializable{
 
     IRNC RNC;
+    INFT NFT;
 
 ///////////// constants /////////////
     string public info;             //summary information about purpose of the room
@@ -27,6 +29,7 @@ contract ChanceRoom is Initializable{
     uint256 public deadLine;        //when getRandomNumber function unlocks (assuming not reach the quorum of users) 
     address public owner;           //owner of contract
     address public RNCAddress;      //random number consumer address
+    address public NFTAddress;      //ERC721 contract mints NFT for the winner
 
 ///////////// variables /////////////
     bool gateIsOpen;                //the contract is open and active now
@@ -55,7 +58,8 @@ contract ChanceRoom is Initializable{
         uint256 _userLimit,
         uint256 _timeLimit,
         address _owner,
-        address _RandomNumberConsumer
+        address _RNCAddress,
+        address _NFTAddress
         ) public initializer {
         info = _info;
         baseURI = _baseURI;
@@ -66,8 +70,10 @@ contract ChanceRoom is Initializable{
             deadLine = block.timestamp + _timeLimit;
         }
         owner = _owner;
-        RNCAddress = _RandomNumberConsumer;
-        RNC = IRNC(RNCAddress);
+        RNCAddress = _RNCAddress;
+        RNC = IRNC(_RNCAddress);
+        NFTAddress = _NFTAddress;
+        NFT = INFT(_NFTAddress);
         gateIsOpen = true;
         status = "open and active";
     }
@@ -199,6 +205,7 @@ contract ChanceRoom is Initializable{
         winner = indexToAddr[randIndex];
         emit Win(randIndex, winner, prize);
         transferPrize();
+        NFT.safeMint(winner);
         status = "Finished.";
     }
 
@@ -212,8 +219,8 @@ contract ChanceRoom is Initializable{
 ///////////// Assurance Functions /////////////
 
     // owner can upgrade RNC in special cases (maybe not safe...)
-    function upgradeRNC(address _RandomNumberConsumer) public onlyOwner{
-        RNCAddress = _RandomNumberConsumer;
+    function upgradeRNC(address _RNCAddress) public onlyOwner{
+        RNCAddress = _RNCAddress;
         RNC = IRNC(RNCAddress);
     }
     

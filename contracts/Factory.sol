@@ -13,7 +13,7 @@ pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./IRegister.sol";
+import "./register/IRegister.sol";
 import "./ChanceRoom.sol";
 
 contract Factory is Ownable {
