@@ -75,7 +75,7 @@ contract ChanceRoom is Initializable{
         NFTAddress = _NFTAddress;
         NFT = INFT(_NFTAddress);
         gateIsOpen = true;
-        status = "open and active";
+        status = "active";
     }
 
 
@@ -182,7 +182,7 @@ contract ChanceRoom is Initializable{
 
         if(userCount == userLimit){
             gateIsOpen = false;
-            status = "Number of users has reach the quorum.";
+            status = "user quorum reached.";
         }
     }
 
