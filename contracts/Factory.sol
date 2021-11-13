@@ -29,7 +29,7 @@ contract Factory is Ownable {
 
     mapping (address => address[]) public creatorToRooms;                
 
-    event NewChanceRoom(address chanceRoom, address owner);
+    event NewChanceRoom(address chanceRoom, address owner, uint256 gateFee, uint256 percentCommission, uint256 userLimit, uint256 timeLimit);
     event RandomNumberConsumerUpdated(address newConsumer, uint256 updateTime);
     event NFTContractUpdated(address newNFTContract, uint256 updateTime);
     event ChanceRoomLibraryUpdated(address newLibrary, uint256 updateTime);
@@ -107,6 +107,6 @@ contract Factory is Ownable {
         );
         creatorToRooms[cloner].push(chanceRoomAddress);
         chanceRooms.push(chanceRoomAddress);
-        emit NewChanceRoom(chanceRoomAddress, cloner);
+        emit NewChanceRoom(chanceRoomAddress, cloner, gateFee, percentCommission, userLimit, timeLimit);
     }
 }
