@@ -1,0 +1,25 @@
+# IRegister => Iregister
+
+## Iregister.sol :
+# VIPstatus => VIPStatus
+# function external `transferUsername()` added
+# event `TransferUsername()` added instead of `SignIn`
+
+## Register.sol :
+# VIPstatus => VIPStatus
+# function external `transferUsername()` added
+# function private `_deleteUser()` added
+# function private `_setUsername()` added
+
+## IRNC.sol :
+# genrateFee => applicantFee
+# events moved from RNC
+
+
+## RandomNumberConsumer.sol :
+# genrateFee => applicantFee
+# events moved to IRNC.sol
+# AggregatorInterface.sol imported
+# uint256 `appFee` removed
+# `priceFeed` added
+# function external `applicantFee` feeds from aggregator

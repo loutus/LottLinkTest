@@ -9,9 +9,10 @@ pragma solidity ^0.8.7;
 //   ███████  ██████     ██       ██    ██ ███████ ██ ██   ████ ██   ██    
 // ======================================================================
 //  ================ Open source smart contract on EVM =================
-//   =============== Verify Random Function by ChanLink ===============
+//   ============== Verify Random Function by ChainLink ===============
 
 import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorInterface.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IRNC.sol";
 
@@ -20,7 +21,9 @@ contract RandomNumberConsumer is IRNC, VRFConsumerBase, Ownable {
     
     bytes32 internal keyHash;
     uint256 internal linkFee;
-    uint256 internal appFee;
+    address public DAOContract;
+    
+    AggregatorInterface internal priceFeed;
 
     mapping (bytes32 => Applicant) public applicants;
 
@@ -30,16 +33,6 @@ contract RandomNumberConsumer is IRNC, VRFConsumerBase, Ownable {
         uint256 randomResult;
     }
 
-    /**
-     * @dev Emitted when an applicant requests for randomness.
-     */
-    event Request(bytes32 requestId);
-
-
-    /**
-     * @dev Emitted when RNC responses to the applicant.
-     */
-    event Response(bytes data);
 
     /**
      * Constructor inherits VRFConsumerBase
@@ -48,24 +41,27 @@ contract RandomNumberConsumer is IRNC, VRFConsumerBase, Ownable {
      * Chainlink VRF Coordinator address: 0x8C7382F9D8f56b33781fE506E897a4F1e2d17255
      * LINK token address:                0x326C977E6efc84E512bB9C30f76E30c160eD06FB
      * Key Hash: 0x6e75b569a01ef56d18cab6a8e71e6600d6ce853834d4a5748b720d06f878b3a4
+     * Aggregator: LINK / MATIC
+     * AggregatorAddress: 0x12162c3E810393dEC01362aBf156D7ecf6159528
      */
-    constructor() 
+    constructor(address _DAOContract) 
         VRFConsumerBase(
             0x8C7382F9D8f56b33781fE506E897a4F1e2d17255, // VRF Coordinator
             0x326C977E6efc84E512bB9C30f76E30c160eD06FB  // LINK Token
         )
     {
+        DAOContract = _DAOContract;
         keyHash = 0x6e75b569a01ef56d18cab6a8e71e6600d6ce853834d4a5748b720d06f878b3a4;
         linkFee = 0.0001 * 10 ** 18; // 0.0001 LINK (Varies by network)
-        appFee = 0.01 * 10 ** 18;
+        priceFeed = AggregatorInterface(0x12162c3E810393dEC01362aBf156D7ecf6159528);
     }
 
 
     /**
-     * @dev See {IRNC-generateFee}.
+     * @dev See {IRNC-applicantFee}.
      */
-    function generateFee() external view returns(uint256 fee) {
-        return appFee;
+    function applicantFee() external view returns(uint256 fee) {
+        return uint256(priceFeed.latestAnswer() / 1000);
     }
 
 
@@ -82,9 +78,10 @@ contract RandomNumberConsumer is IRNC, VRFConsumerBase, Ownable {
     }
 
     /**
-     * Callback function used by VRF Coordinator
-     1. fulfill applicant last info (randomness)
-     2. response to the applicant request
+     * @dev Callback function used by VRF Coordinator
+     *
+     * fulfill applicant last info (randomness)
+     * response to the applicant request
      */
     function fulfillRandomness(bytes32 requestId, uint256 randomness) internal override {
         applicants[requestId].randomResult = randomness;
@@ -97,9 +94,13 @@ contract RandomNumberConsumer is IRNC, VRFConsumerBase, Ownable {
     }
 
     /**
-     * Response function to the applicant contract
-     1. call back the selector provided by the applicant
-     2. emit Response
+     * @dev Response function to the applicant contract.
+     *
+     * Requirements:
+     *
+     * - call back should be successful.
+     * 
+     * Emits a {Response} event.
      */
     function response(address contractAddress, bytes4 selector, uint256 randomResult) private {
         (bool success, bytes memory data) = contractAddress.call(abi.encodeWithSelector(selector, randomResult));
@@ -109,7 +110,7 @@ contract RandomNumberConsumer is IRNC, VRFConsumerBase, Ownable {
     
     
     /**
-     * withdraw LINK function to avoid locking LINK in the contract
+     * @dev Withdraw LINK function to avoid locking LINK in the contract
      */
     function withdrawLink(uint256 amount) external onlyOwner {
         address reciever = owner();
@@ -118,8 +119,11 @@ contract RandomNumberConsumer is IRNC, VRFConsumerBase, Ownable {
     
 
     /**
-     * withdraw MATIC paid by applicants
-     * only owner can call this function
+     * @dev Withdraw MATIC paid by applicants
+     *
+     * Requirements:
+     *
+     * - only owner can call this function.
      */
     function withdrawCash() external onlyOwner {
         address payable reciever = payable(owner());
@@ -128,16 +132,25 @@ contract RandomNumberConsumer is IRNC, VRFConsumerBase, Ownable {
     
 
     /**
-     * return LINK supply of the contract
+     * @dev Returns LINK supply of the contract
      */
     function linkSupply() public view returns(uint256){
         return LINK.balanceOf(address(this));
     }
 
     /**
-     * return MATIC supply of the contract
+     * @dev Returns MATIC supply of the contract
      */
     function totalSupply() public view returns(uint256){
         return address(this).balance;
+    }
+
+    /**
+     * @dev request to DAO for link supply
+     *
+     * transfer all matic supply to DAO contract.
+     */
+    function requestForLink() public {
+        (bool success, bytes memory data) = DAOContract.call{value:totalSupply()}(abi.encodeWithSignature("requestForLink"));
     }
 }

@@ -9,16 +9,26 @@ pragma solidity ^0.8.7;
 //   ███████  ██████     ██       ██    ██ ███████ ██ ██   ████ ██   ██    
 // ======================================================================
 //  ================ Open source smart contract on EVM =================
-//   =============== Verify Random Function by ChanLink ===============
+//   ============== Verify Random Function by ChainLink ===============
 
 
 interface IRNC {
 
+    /**
+     * @dev Emitted when an applicant requests for randomness.
+     */
+    event Request(bytes32 requestId);
 
     /**
-     * @dev Returns cost of every random number generation, applicant should pay.
+     * @dev Emitted when RNC responses to the applicant.
      */
-    function generateFee() external view returns(uint256 fee);
+    event Response(bytes data);
+
+
+    /**
+     * @dev Returns cost of every random number generation which applicant should pay.
+     */
+    function applicantFee() external view returns(uint256 fee);
 
     /**
      * @dev Request for a 30 digits random number and record applicant's information.
@@ -34,6 +44,5 @@ interface IRNC {
      *
      * Emits a {Request} event.
      */
-
     function getRandomNumber(bytes4 _callBackSelector) external payable returns(bytes32 requestId);
 }
