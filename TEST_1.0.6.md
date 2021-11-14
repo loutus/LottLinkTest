@@ -23,3 +23,7 @@
 # uint256 `appFee` removed
 # `priceFeed` added
 # function external `applicantFee` feeds from aggregator
+# `appFee` => `applicantFee`
+
+
+# `Iswap.sol` and `Swap.sol` added to new folder `swap`

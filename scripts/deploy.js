@@ -16,7 +16,7 @@ const { ethers } = require("hardhat");
 async function main() {
     const [deployer] = await ethers.getSigners();
   
-    console.log("Owner address:", deployer.address);
+    // console.log("Owner address:", deployer.address);
 
     // const Register = await ethers.getContractFactory("Register");
     // const R = await Register.deploy("0x0000000000000000000000000000000000000000", "100000000000000000");

@@ -15,6 +15,7 @@ import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorInterface.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IRNC.sol";
+import "../exchange/Iexchange.sol";
 
 
 contract RandomNumberConsumer is IRNC, VRFConsumerBase, Ownable {
@@ -24,6 +25,7 @@ contract RandomNumberConsumer is IRNC, VRFConsumerBase, Ownable {
     address public DAOContract;
     
     AggregatorInterface internal priceFeed;
+    Iexchange internal exchange;
 
     mapping (bytes32 => Applicant) public applicants;
 
@@ -60,7 +62,7 @@ contract RandomNumberConsumer is IRNC, VRFConsumerBase, Ownable {
     /**
      * @dev See {IRNC-applicantFee}.
      */
-    function applicantFee() external view returns(uint256 fee) {
+    function applicantFee() public view returns(uint256 fee) {
         return uint256(priceFeed.latestAnswer() / 1000);
     }
 
@@ -70,7 +72,7 @@ contract RandomNumberConsumer is IRNC, VRFConsumerBase, Ownable {
      */
     function getRandomNumber(bytes4 _callBackSelector) public payable returns(bytes32 requestId){
         require(LINK.balanceOf(address(this)) >= linkFee, "Not enough LINK");
-        require(msg.value >= appFee, "Not enough MATIC");
+        require(msg.value >= applicantFee(), "Not enough MATIC");
         requestId = requestRandomness(keyHash, linkFee);
         applicants[requestId] = Applicant(msg.sender, _callBackSelector, 0);
         emit Request(requestId);
@@ -111,6 +113,7 @@ contract RandomNumberConsumer is IRNC, VRFConsumerBase, Ownable {
     
     /**
      * @dev Withdraw LINK function to avoid locking LINK in the contract
+     * (not needed in release version)
      */
     function withdrawLink(uint256 amount) external onlyOwner {
         address reciever = owner();
@@ -149,8 +152,14 @@ contract RandomNumberConsumer is IRNC, VRFConsumerBase, Ownable {
      * @dev request to DAO for link supply
      *
      * transfer all matic supply to DAO contract.
-     */
-    function requestForLink() public {
-        (bool success, bytes memory data) = DAOContract.call{value:totalSupply()}(abi.encodeWithSignature("requestForLink"));
+     */ // should be removed.
+    // function requestForLink() public {
+    //     (bool success, bytes memory data) = DAOContract.call{value:totalSupply()}(abi.encodeWithSignature("requestForLink"));
+    // }
+
+
+
+    function exchangeMaticToLink(uint256 amount) public {
+        exchange.swap(0x0000000000000000000000000000000000001010, 0x326C977E6efc84E512bB9C30f76E30c160eD06FB, amount);
     }
 }
