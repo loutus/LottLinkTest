@@ -44,6 +44,7 @@ contract ChanceRoom is Initializable{
     mapping (address => bool) public userEntered;
     
 /////////////   events   /////////////
+    event StatusChanged(string newStatus);
     event BuySeat(address indexed user);
     event RollDice(bytes32 requestId);
     event Win(uint256 index, address user, uint256 amount);
@@ -75,7 +76,12 @@ contract ChanceRoom is Initializable{
         NFTAddress = _NFTAddress;
         NFT = INFT(_NFTAddress);
         gateIsOpen = true;
+<<<<<<< HEAD:contracts/ChanceRoom/ChanceRoom.sol
         status = "active";
+=======
+        status = "open";
+        emit StatusChanged(status);
+>>>>>>> TEST_1.0.5:contracts/ChanceRoom.sol
     }
 
 
@@ -211,7 +217,12 @@ contract ChanceRoom is Initializable{
 
         if(userCount == userLimit){
             gateIsOpen = false;
+<<<<<<< HEAD:contracts/ChanceRoom/ChanceRoom.sol
             status = "user quorum reached.";
+=======
+            status = "user qourum reached";
+            emit StatusChanged(status);
+>>>>>>> TEST_1.0.5:contracts/ChanceRoom.sol
         }
     }
 
@@ -232,7 +243,8 @@ contract ChanceRoom is Initializable{
         bytes32 requestId = RNC.getRandomNumber{value:RNCwithhold}(selector);
         RNCwithhold = 0;
         emit RollDice(requestId);
-        status = "waiting for random number...";
+        status = "waiting for RNC";
+        emit StatusChanged(status);
     }
 
     /**
@@ -252,7 +264,8 @@ contract ChanceRoom is Initializable{
         emit Win(randIndex, winner, prize);
         transferPrize();
         NFT.safeMint(winner);
-        status = "Finished.";
+        status = "closed";
+        emit StatusChanged(status);
     }
 
     /**
@@ -298,6 +311,7 @@ contract ChanceRoom is Initializable{
         }
         prize = 0;
         gateIsOpen = false;
-        status = "Canceled.";
+        status = "canceled";
+        emit StatusChanged(status);
     }
 }
