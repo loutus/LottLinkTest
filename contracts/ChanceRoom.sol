@@ -44,6 +44,7 @@ contract ChanceRoom is Initializable{
     mapping (address => bool) public userEntered;
     
 /////////////   events   /////////////
+    event StatusChanged(string newStatus);
     event BuySeat(address indexed user);
     event RollDice(bytes32 requestId);
     event Win(uint256 index, address user, uint256 amount);
@@ -75,7 +76,8 @@ contract ChanceRoom is Initializable{
         NFTAddress = _NFTAddress;
         NFT = INFT(_NFTAddress);
         gateIsOpen = true;
-        status = "open and active";
+        status = "open";
+        emit StatusChanged(status);
     }
 
 
@@ -182,7 +184,8 @@ contract ChanceRoom is Initializable{
 
         if(userCount == userLimit){
             gateIsOpen = false;
-            status = "Number of users has reach the quorum.";
+            status = "user qourum reached";
+            emit StatusChanged(status);
         }
     }
 
@@ -195,7 +198,8 @@ contract ChanceRoom is Initializable{
         bytes32 requestId = RNC.getRandomNumber{value:RNCwithhold}(selector);
         RNCwithhold = 0;
         emit RollDice(requestId);
-        status = "waiting for random number...";
+        status = "waiting for RNC";
+        emit StatusChanged(status);
     }
 
     // only RandomNumberConsumer can call this function
@@ -206,7 +210,8 @@ contract ChanceRoom is Initializable{
         emit Win(randIndex, winner, prize);
         transferPrize();
         NFT.safeMint(winner);
-        status = "Finished.";
+        status = "closed";
+        emit StatusChanged(status);
     }
 
     // withdraw commission by owner of the contract
@@ -236,6 +241,7 @@ contract ChanceRoom is Initializable{
         }
         prize = 0;
         gateIsOpen = false;
-        status = "Canceled.";
+        status = "canceled";
+        emit StatusChanged(status);
     }
 }
