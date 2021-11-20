@@ -14,8 +14,9 @@ pragma solidity ^0.8.7;
 import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorInterface.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IRNC.sol";
-import "../exchange/Iexchange.sol";
+import "../swap/Iswap.sol";
 
 
 contract RandomNumberConsumer is IRNC, VRFConsumerBase, Ownable {
@@ -25,7 +26,6 @@ contract RandomNumberConsumer is IRNC, VRFConsumerBase, Ownable {
     address public DAOContract;
     
     AggregatorInterface internal priceFeed;
-    Iexchange internal exchange;
 
     mapping (bytes32 => Applicant) public applicants;
 
@@ -158,8 +158,12 @@ contract RandomNumberConsumer is IRNC, VRFConsumerBase, Ownable {
     // }
 
 
-
-    function exchangeMaticToLink(uint256 amount) public {
-        exchange.swap(0x0000000000000000000000000000000000001010, 0x326C977E6efc84E512bB9C30f76E30c160eD06FB, amount);
+    /**
+     * @dev swap any ERC20 token to any other ERC20 token on this chain
+     *
+     */
+    function swap(address swapper, address tokenIn, address tokenOut, uint256 amountIn) external returns(uint256 amountOut){
+        require(IERC20(tokenIn).approve(swapper, amountIn));
+        return Iswap(swapper).swapExactInputSingle(tokenIn, tokenOut, amountIn);
     }
 }

@@ -32,5 +32,5 @@ interface Iswap{
      *
      * Emits a {Swap} event.
      */
-    function swap(address _tokenIn, address _tokenOut, uint256 _amountIn) external;
+    function swapExactInputSingle(address _tokenIn, address _tokenOut, uint256 amountIn) external returns (uint256 amountOut);
 }
