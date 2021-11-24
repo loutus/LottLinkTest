@@ -12,12 +12,12 @@
 # function private `_setUsername()` added
 
 ## IRNC.sol :
-# genrateFee => applicantFee
+# `genrateFee` => `applicantFee`
 # events moved from RNC
 
 
 ## RandomNumberConsumer.sol :
-# genrateFee => applicantFee
+# `genrateFee` => `applicantFee`
 # events moved to IRNC.sol
 # AggregatorInterface.sol imported
 # uint256 `appFee` removed
@@ -27,3 +27,12 @@
 
 
 # `Iswap.sol` and `Swap.sol` added to new folder `swap`
+
+## ChanceRoom.sol :
+# bool `gateIsOpen` removed => string status "open"
+# `gateFee` => `seatPrice`
+# `userCount` => `seatsTaken`
+# `userLimit` => `seatsLimit`
+# mapping `userEntered` removed
+# modifier Enterance: `userEntered` removed
+# 
