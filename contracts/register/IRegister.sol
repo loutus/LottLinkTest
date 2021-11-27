@@ -18,12 +18,12 @@ interface Iregister {
     /**
      * @dev Emitted when username transfers.
      */
-    event TransferUsername(address _from, address _to, string username);
+    event TransferUsername(address _from, address _to, bytes username);
 
     /**
      * @dev Emitted when user info sets or changes.
      */
-    event SetInfo(address indexed userAddress, string info);
+    event SetInfo(address indexed userAddress, bytes info);
 
 
     /**
@@ -34,7 +34,7 @@ interface Iregister {
     /**
      * @dev returns true if the user has been registered. (by `username`)
      */
-    function registered(string memory username) external view returns(bool);
+    function registered(bytes memory username) external view returns(bool);
 
     /**
      * @dev returns true if address `userAddr` registered and its `username` is pure type.
@@ -53,7 +53,7 @@ interface Iregister {
      *
      * - `username` must be registered.
      */
-    function usernameToAddress(string memory username) external view returns(address userAddr);
+    function usernameToAddress(bytes memory username) external view returns(address userAddr);
 
     /**
      * @dev Returns the `username` of the address `userAddr`.
@@ -62,7 +62,7 @@ interface Iregister {
      *
      * - address `userAddr` must be registered before.
      */
-    function addressToUsername(address userAddr) external view returns(string memory username);
+    function addressToUsername(address userAddr) external view returns(bytes memory username);
 
 
     /**
@@ -73,8 +73,8 @@ interface Iregister {
      * - address `userAddr` must be registered before.
      */
     function addressToProfile(address userAddr) external view returns(
-        string memory username,
-        string memory info,
+        bytes memory username,
+        bytes memory info,
         bool VIPStatus
     );
 
@@ -85,9 +85,9 @@ interface Iregister {
      *
      * - `username` must be registered before.
      */
-    function usernameToProfile(string memory username) external view returns(
+    function usernameToProfile(bytes memory username) external view returns(
         address userAddr,
-        string memory info,
+        bytes memory info,
         bool VIPStatus
     );
 
@@ -95,7 +95,7 @@ interface Iregister {
      * @dev Sign in the Register contract by adopting a `username` and optional info if needed.
      *
      * Pure usernames are payable but new user can sign in free by using `_` in the first character of `username`.
-     * new user can introduce a string username as `presenter`.
+     * new user can introduce a bytes username as `presenter`.
      * 
      * Requirements:
      *
@@ -105,12 +105,12 @@ interface Iregister {
      *
      * Emits a {SignIn} event.
      */
-    function signIn(string memory username, string memory info, string memory presenter) external payable;
+    function signIn(bytes memory username, bytes memory info, bytes memory presenter) external payable;
 
     /**
      * @dev in addition to the username, every user can set a brief personal info.
      *
-     * To remove previously info, it can be called by empty string input.
+     * To remove previously info, it can be called by empty bytes input.
      *
      * Requirements:
      *
@@ -118,7 +118,7 @@ interface Iregister {
      *
      * Emits a {SetInfo} event.
      */
-    function setInfo(string memory info) external;
+    function setInfo(bytes memory info) external;
 
     /**
      * @dev the user can transfer its user to another address.
