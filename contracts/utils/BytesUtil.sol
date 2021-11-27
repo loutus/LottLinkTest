@@ -11,27 +11,26 @@ pragma solidity ^0.8.7;
 //  ================ Open source smart contract on EVM =================
 //   =============== Verify Random Function by ChanLink ===============
 
-library StringUtil {
+library BytesUtil {
 
     /**
      * Lower
      * 
-     * Converts all the values of a string to their corresponding lower case
+     * Converts all the values of a bytes to their corresponding lower case
      * value.
      * 
      * @param _base When being used for a data type this is the extended object
-     *              otherwise this is the string base to convert to lower case
-     * @return string 
+     *              otherwise this is the bytes base to convert to lower case
+     * @return bytes 
      */
-    function lower(string memory _base)
+    function lower(bytes memory _base)
         internal
         pure
-        returns (string memory) {
-        bytes memory _baseBytes = bytes(_base);
-        for (uint i = 0; i < _baseBytes.length; i++) {
-            _baseBytes[i] = _lower(_baseBytes[i]);
+        returns (bytes memory) {
+        for (uint i = 0; i < _base.length; i++) {
+            _base[i] = _lower(_base[i]);
         }
-        return string(_baseBytes);
+        return _base;
     }
 
     /**

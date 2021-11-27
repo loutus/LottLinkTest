@@ -12,25 +12,25 @@ pragma solidity ^0.8.7;
 //   ============== Verify Random Function by ChainLink ===============
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "../utils/StringUtil.sol";
+import "../utils/BytesUtil.sol";
 import "./Iregister.sol";
 
 contract Register is Iregister, Ownable{
 
-    using StringUtil for string;
+    using BytesUtil for bytes;
 
     uint256 public pureNameFee;
     address public DAOContract;
 
     struct User{
-        string username;
-        string info;
-        string DAOInfo;
+        bytes username;
+        bytes info;
+        bytes DAOInfo;
         bool isVIP;
     }
 
     mapping(address => User) public addrToUser;
-    mapping(string => address) public userToAddr;
+    mapping(bytes => address) public userToAddr;
 
 
     constructor(address _DAOAddress, uint256 _pureNameFee){
@@ -42,13 +42,13 @@ contract Register is Iregister, Ownable{
      * @dev See {Iregister-registered}.
      */
     function registered(address userAddr) public view returns(bool) {
-        return bytes(addrToUser[userAddr].username).length != 0;
+        return addrToUser[userAddr].username.length != 0;
     }
 
     /**
      * @dev See {Iregister-registered}.
      */
-    function registered(string memory username) public view returns(bool) {
+    function registered(bytes memory username) public view returns(bool) {
         return userToAddr[username.lower()] != address(0);
     }
 
@@ -57,7 +57,7 @@ contract Register is Iregister, Ownable{
      */
     function isPure(address userAddr) external view returns(bool){
         return registered(userAddr) 
-        && bytes(addrToUser[userAddr].username)[0] != bytes1("_");
+        && addrToUser[userAddr].username[0] != 0x5f;
     }
 
     /**
@@ -71,7 +71,7 @@ contract Register is Iregister, Ownable{
     /**
      * @dev See {Iregister-usernameToAddress}.
      */
-    function usernameToAddress(string memory username) public view returns(address userAddr) {
+    function usernameToAddress(bytes memory username) public view returns(address userAddr) {
         require(registered(username), "no user by this username");
         return userToAddr[username.lower()];
     }
@@ -79,7 +79,7 @@ contract Register is Iregister, Ownable{
     /**
      * @dev See {Iregister-addressToUsername}.
      */
-    function addressToUsername(address userAddr) external view returns(string memory username) {
+    function addressToUsername(address userAddr) external view returns(bytes memory username) {
         require(registered(userAddr), "no user by this address");
         return addrToUser[userAddr].username;
     }
@@ -88,8 +88,8 @@ contract Register is Iregister, Ownable{
      * @dev See {Iregister-addressToProfile}.
      */
     function addressToProfile(address userAddr) external view returns(
-        string memory username,
-        string memory info,
+        bytes memory username,
+        bytes memory info,
         bool VIPStatus
     ){
         require(registered(userAddr), "no user by this address");
@@ -103,9 +103,9 @@ contract Register is Iregister, Ownable{
     /**
      * @dev See {Iregister-usernameToProfile}.
      */
-    function usernameToProfile(string memory username) external view returns(
+    function usernameToProfile(bytes memory username) external view returns(
         address userAddr,
-        string memory info,
+        bytes memory info,
         bool VIPStatus
     ){
         userAddr = usernameToAddress(username);
@@ -119,10 +119,10 @@ contract Register is Iregister, Ownable{
     /**
      * @dev See {Iregister-signIn}.
      */
-    function signIn(string memory username, string memory info, string memory presenter) external payable {
+    function signIn(bytes memory username, bytes memory info, bytes memory presenter) external payable {
         address userAddr = _msgSender();
         require(!registered(username), "this username has been used before");
-        if(bytes(username)[0] != bytes1("_")) {
+        if(username[0] != 0x5f) {
             require(msg.value >= pureNameFee, "this username is Payable");
         }
 
@@ -130,7 +130,7 @@ contract Register is Iregister, Ownable{
 
         emit TransferUsername(address(0), userAddr, username);
 
-        if(bytes(info).length > 0) {setInfo(info);}
+        if(info.length > 0) {setInfo(info);}
 
         address presenterAddr = userToAddr[presenter.lower()];
         if(presenterAddr != address(0)){
@@ -138,7 +138,7 @@ contract Register is Iregister, Ownable{
                 (abi.encodeWithSignature("registerSign(address)", presenterAddr
             ));
             if(success){
-                addrToUser[userAddr].DAOInfo = abi.decode(data, (string));
+                addrToUser[userAddr].DAOInfo = data;
             }
         }
     }
@@ -146,7 +146,7 @@ contract Register is Iregister, Ownable{
     /**
      * @dev See {Iregister-setInfo}.
      */
-    function setInfo(string memory info) public {
+    function setInfo(bytes memory info) public {
         address userAddr = _msgSender();
         require(registered(userAddr) , "you have to sign in first");
         addrToUser[userAddr].info = info;
@@ -158,7 +158,7 @@ contract Register is Iregister, Ownable{
      */
     function transferUsername(address _to) external {
         address _from = _msgSender();
-        string memory username = addrToUser[_from].username;
+        bytes memory username = addrToUser[_from].username;
 
         _deleteUser(_from, username);
 
@@ -176,7 +176,7 @@ contract Register is Iregister, Ownable{
      *
      * - user should be registered before.
      */
-    function _deleteUser(address userAddr, string memory username) private {
+    function _deleteUser(address userAddr, bytes memory username) private {
         require(registered(userAddr) , "you are not registered");
         delete addrToUser[userAddr];
         delete userToAddr[username.lower()];
@@ -190,8 +190,8 @@ contract Register is Iregister, Ownable{
      * - Not allowed empty usernames.
      * - user should not be registered before.
      */
-    function _setUsername(address userAddr, string memory username) private {
-        require(bytes(username).length > 0, "empty username input");
+    function _setUsername(address userAddr, bytes memory username) private {
+        require(username.length > 0, "empty username input");
         require(!registered(userAddr) , "this address has signed a username before");
         addrToUser[userAddr].username = username;
         userToAddr[username.lower()] = userAddr;
