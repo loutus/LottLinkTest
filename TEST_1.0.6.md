@@ -35,4 +35,4 @@
 # `userLimit` => `seatsLimit`
 # mapping `userEntered` removed
 # modifier Enterance: `userEntered` removed
-# 
+# `generateFee` => `applicantFee`

@@ -80,13 +80,13 @@ contract ChanceRoom is Initializable{
 
 /////////////    modifiers    /////////////
     modifier enterance() {
-        require(bytes(status) == bytes("open"), "room expired");
+        // require(bytes(status) == bytes("open"), "room expired");
         require(seatsLimit == 0 || seatsTaken < seatsLimit, "sold out.");
         _;
     }
 
     modifier canRoll() {
-        require(RNCwithhold == RNC.generateFee(), "not enough RNC withhold");
+        require(RNCwithhold == RNC.applicantFee(), "not enough RNC withhold");
         if(seatsLimit > 0 && deadLine > 0) {
             require(seatsTaken == seatsLimit || block.timestamp >= deadLine, "reach time limit or user limit to activate dice");
         } else if (seatsLimit > 0) {
@@ -143,7 +143,7 @@ contract ChanceRoom is Initializable{
      * @dev Deduct the `RNCWithhold` from incomming value and return rest of it.
      */
     function deductRNCwithhold(uint256 value) private returns(uint256){
-        uint256 requiredAmount = RNC.generateFee() - RNCwithhold;
+        uint256 requiredAmount = RNC.applicantFee() - RNCwithhold;
         if(requiredAmount > 0){
             if(requiredAmount >= value){
                 RNCwithhold += value;
@@ -199,7 +199,6 @@ contract ChanceRoom is Initializable{
         require(userPayment == seatPrice, "Wrong card fee entered");
 
         seatToAddr[seatsTaken] = userAddress;
-        userEntered[userAddress] = true;
         emit BuySeat(userAddress);
 
         seatsTaken++;
@@ -295,7 +294,7 @@ contract ChanceRoom is Initializable{
             address payable reciever = payable(seatToAddr[seat]);
             reciever.transfer(seatPrice);
         }
-        prize = 0;0xd9145CCE52D386f254917e481eB44e9943F39138;
+        prize = 0;
         status = "canceled";
         emit StatusChanged(status);
     }
