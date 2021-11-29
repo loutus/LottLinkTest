@@ -14,13 +14,16 @@ pragma solidity ^0.8.7;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../utils/StringUtil.sol";
 import "./Iregister.sol";
+import "../ERC20/ILOTT.sol";
 
 contract Register is Iregister, Ownable{
 
     using StringUtil for string;
 
-    uint256 public pureNameFee;
+    ILOTT LOTT;
     address public DAOContract;
+    uint256 public pureNameFee;
+    uint256 public bonus;
 
     struct User{
         string username;
@@ -33,9 +36,11 @@ contract Register is Iregister, Ownable{
     mapping(string => address) public userToAddr;
 
 
-    constructor(address _DAOAddress, uint256 _pureNameFee){
+    constructor(address _DAOAddress, address _LOTTAddress, uint256 _pureNameFee, uint256 _bonus){
         newDAOContract(_DAOAddress);
+        newLOTT(_LOTTAddress);
         setPureNameFee(_pureNameFee);
+        setBonus(_bonus);
     }
 
     /**
@@ -124,6 +129,7 @@ contract Register is Iregister, Ownable{
         require(!registered(username), "this username has been used before");
         if(bytes(username)[0] != bytes1("_")) {
             require(msg.value >= pureNameFee, "this username is Payable");
+            _donateBonus(userAddr);
         }
 
         _setUsername(userAddr, username);
@@ -198,10 +204,24 @@ contract Register is Iregister, Ownable{
     }
 
     /**
+     * @dev donate the `bonus` to the user.
+     */
+    function _donateBonus(address userAddr) private {
+        LOTT.mint(userAddr, bonus);
+    }
+
+    /**
      * @dev Set sign in fee for pure usernames.
      */
     function setPureNameFee(uint256 _fee) public onlyOwner {
         pureNameFee = _fee;
+    }
+
+    /**
+     * @dev Set bonus for pure usernames.
+     */
+    function setBonus(uint256 _bonus) public onlyOwner {
+        bonus = _bonus;
     }
 
     /**
@@ -218,6 +238,13 @@ contract Register is Iregister, Ownable{
     function withdraw(address receiverAddress) external onlyOwner {
         address payable receiver = payable(receiverAddress);
         receiver.transfer(address(this).balance);
+    }
+
+    /**
+     * @dev Chenge LOTT Token address by owner of the contract.
+     */
+    function newLOTT(address LOTTAddr) public onlyOwner {
+        LOTT = ILOTT(LOTTAddr);
     }
 
     /**

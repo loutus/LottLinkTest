@@ -18,9 +18,9 @@ async function main() {
   
     // console.log("Owner address:", deployer.address);
 
-    const Tickets = await ethers.getContractFactory("Tickets");
-    const T = await Tickets.deploy("ERC20Permit", "per");
-    console.log("Tickets Contract Address:", T.address);
+    const ERC20PermitSimple = await ethers.getContractFactory("ERC20PermitSimple");
+    const permitSimple = await ERC20PermitSimple.deploy();
+    console.log("permitSimple Contract Address:", permitSimple.address);
 
     // const Register = await ethers.getContractFactory("Register");
     // const R = await Register.deploy("0x0000000000000000000000000000000000000000", "100000000000000000");

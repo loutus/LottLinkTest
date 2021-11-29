@@ -15,6 +15,7 @@ import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../register/Iregister.sol";
 import "./ChanceRoom.sol";
+import "../ERC20/ILOTT.sol";
 
 contract Factory is Ownable {
     using Clones for address;
@@ -24,7 +25,9 @@ contract Factory is Ownable {
     address public randomNumberConsumer;        //Random number consumer which new chance room will use
     address public NFTContract;                 //ERC721 contract mints NFT for the winner
 
+    ILOTT LOTT;
     Iregister register;
+    uint256 cloneFee;
     address[] public chanceRooms;
 
     mapping (address => address[]) public creatorToRooms;                
@@ -38,13 +41,17 @@ contract Factory is Ownable {
         address _registerContract,
         address _randomNumberConsumer,
         address _NFTContractAddress,
-        address _chanceRoomLibrary
+        address _chanceRoomLibrary,
+        address _LOTTAddress
+        uint256 _cloneFee
     ) {
         registerContract = _registerContract;
         register = Iregister(registerContract);
         newRandomNumberConsumer(_randomNumberConsumer);
         newNFTContract(_NFTContractAddress);
         newChanceRoomLibrary(_chanceRoomLibrary);
+        newLOTT(_LOTTAddress);
+        setCloneFee(_cloneFee);
     }
 
 
@@ -66,6 +73,12 @@ contract Factory is Ownable {
         return _tmp;
     }
 
+    /**
+     * @dev Set clone fee to clone a new chance room.
+     */
+    function setCloneFee(uint256 _cloneFee) public onlyOwner {
+        cloneFee = _cloneFee;
+    }
 
     //Upgrade random number consumer by owner
     function newRandomNumberConsumer(address _randomNumberConsumer) public onlyOwner {
@@ -84,6 +97,13 @@ contract Factory is Ownable {
         chanceRoomLibrary = _chanceRoomLibrary;
         emit ChanceRoomLibraryUpdated(chanceRoomLibrary, block.timestamp);
     }
+    
+    /**
+     * @dev Chenge LOTT Token address by owner of the contract.
+     */
+    function newLOTT(address LOTTAddr) public onlyOwner {
+        LOTT = ILOTT(LOTTAddr);
+    }
 
 
     //Clone a new chance room by VIP user
@@ -97,6 +117,7 @@ contract Factory is Ownable {
     ) public {
         address cloner = _msgSender();
         require(register.registered(cloner), "Only VIP users can clone the contract.");
+        LOTT.burnFrom(cloner, cloneFee);
         address chanceRoomAddress = chanceRoomLibrary.clone();
         ChanceRoom chanceRoom = ChanceRoom(chanceRoomAddress);
         chanceRoom.initialize(
