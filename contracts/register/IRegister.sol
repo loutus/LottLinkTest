@@ -18,7 +18,7 @@ interface Iregister {
     /**
      * @dev Emitted when username transfers.
      */
-    event TransferUsername(address _from, address _to, string username);
+    event TransferUsername(address _from, address _to, string username, bool initialize);
 
     /**
      * @dev Emitted when user info sets or changes.
@@ -121,9 +121,10 @@ interface Iregister {
     function setInfo(string memory info) external;
 
     /**
-     * @dev the user can transfer its user to another address.
+     * @dev the user can transfer its username to another address.
      * 
      * When `_to` is zero the username will be free.
+     * if user wants to `initialize`, all of its data will be cleared except `username`
      *
      * Requirements:
      *
@@ -131,5 +132,5 @@ interface Iregister {
      *
      * Emits a {TransferUsername} event.
      */
-    function transferUsername(address _to) external;
+    function transferUsername(address _to, bool initialize) external;
 }

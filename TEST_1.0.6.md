@@ -10,11 +10,6 @@
 # function external `transferUsername()` added
 # function private `_deleteUser()` added
 # function private `_setUsername()` added
-# contract `ILOTT.sol` imported
-# function `newLOTT` added
-# uint256 `bonus` added
-# function `setBonus` added
-# donate `bonus` to pure username in `signIn` function
 
 ## IRNC.sol :
 # `genrateFee` => `applicantFee`
@@ -48,3 +43,7 @@
 # uint256 `cloneFee` added
 # function `setCloneFee` added
 # in function `newChanceRoom`, `cloneFee` burns from `cloner`
+
+## DAO.sol :
+# contract `ILOTT.sol` imported
+# function `newLOTT` added

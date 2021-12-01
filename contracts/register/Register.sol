@@ -11,37 +11,32 @@ pragma solidity ^0.8.7;
 //  ================ Open source smart contract on EVM =================
 //   ============== Verify Random Function by ChainLink ===============
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "../utils/StringUtil.sol";
 import "./Iregister.sol";
-import "../ERC20/ILOTT.sol";
+import "./DecentralOwnable";
 
-contract Register is Iregister, Ownable{
+contract Register is Iregister, DecentralOwnable{
 
     using StringUtil for string;
 
-    ILOTT LOTT;
+
     address public DAOContract;
-    uint256 public pureNameFee;
-    uint256 public bonus;
+    // uint256 public pureNameFee;
 
     struct User{
         string username;
         string info;
-        string DAOInfo;
+        address presenter;
+        bytes DAOInfo;
         bool isVIP;
+        uint256[] params;
     }
 
     mapping(address => User) public addrToUser;
     mapping(string => address) public userToAddr;
 
 
-    constructor(address _DAOAddress, address _LOTTAddress, uint256 _pureNameFee, uint256 _bonus){
-        newDAOContract(_DAOAddress);
-        newLOTT(_LOTTAddress);
-        setPureNameFee(_pureNameFee);
-        setBonus(_bonus);
-    }
+
 
     /**
      * @dev See {Iregister-registered}.
@@ -127,9 +122,13 @@ contract Register is Iregister, Ownable{
     function signIn(string memory username, string memory info, string memory presenter) external payable {
         address userAddr = _msgSender();
         require(!registered(username), "this username has been used before");
+
+        bool pureSign;
         if(bytes(username)[0] != bytes1("_")) {
-            require(msg.value >= pureNameFee, "this username is Payable");
-            _donateBonus(userAddr);
+            pureSign = true;
+            require(msg.value >= DAO.vars["registerPureFee"], "this username is Payable");
+        } else {
+            require(msg.value >= DAO.vars["registerNormalFee"], "this username is Payable");
         }
 
         _setUsername(userAddr, username);
@@ -139,13 +138,11 @@ contract Register is Iregister, Ownable{
         if(bytes(info).length > 0) {setInfo(info);}
 
         address presenterAddr = userToAddr[presenter.lower()];
-        if(presenterAddr != address(0)){
-            (bool success, bytes memory data) = DAOContract.call
-                (abi.encodeWithSignature("registerSign(address)", presenterAddr
-            ));
-            if(success){
-                addrToUser[userAddr].DAOInfo = abi.decode(data, (string));
-            }
+        (bool success, bytes memory data) = DAOContract.call{value : msg.value}
+            (abi.encodeWithSignature("registerSign(address, address, bool)", userAddr, presenterAddr, pureSign));
+
+        if(success){
+            addrToUser[userAddr].DAOInfo = abi.decode(data, (string));
         }
     }
 
@@ -162,30 +159,22 @@ contract Register is Iregister, Ownable{
     /**
      * @dev See {Iregister-transferUsername}.
      */
-    function transferUsername(address _to) external {
+    function transferUsername(address _to, bool resetHistory) external {
         address _from = _msgSender();
-        string memory username = addrToUser[_from].username;
+        string memory username = addressToUsername(_from);
 
-        _deleteUser(_from, username);
+        userToAddr[username.lower()] = _to;
 
-        if(_to != address(0)){
-            _setUsername(_to, username);
+        if (_to != address(0)){
+            if (resetHistory) {
+                addrToUser[_to].username = username;
+            } else {
+                addrToUser[_to] = addrToUser[_from];
+            }
         }
+        delete addrToUser[_from];
 
-        emit TransferUsername(_from, _to, username);
-    }
-
-    /**
-     * @dev delete a user by specific `userAddr` and `username`.
-     * 
-     * Requirements:
-     *
-     * - user should be registered before.
-     */
-    function _deleteUser(address userAddr, string memory username) private {
-        require(registered(userAddr) , "you are not registered");
-        delete addrToUser[userAddr];
-        delete userToAddr[username.lower()];
+        emit TransferUsername(_from, _to, username, resetHistory);
     }
 
     /**
@@ -203,54 +192,27 @@ contract Register is Iregister, Ownable{
         userToAddr[username.lower()] = userAddr;
     }
 
-    /**
-     * @dev donate the `bonus` to the user.
-     */
-    function _donateBonus(address userAddr) private {
-        LOTT.mint(userAddr, bonus);
+    function _userSubParam(address userAddr, uint256 index, uint256 amount) private {
+        addrToUser[userAddr].params[index] -= amount;
     }
 
-    /**
-     * @dev Set sign in fee for pure usernames.
-     */
-    function setPureNameFee(uint256 _fee) public onlyOwner {
-        pureNameFee = _fee;
+    function _userAddParam(address userAddr, uint256 index, uint256 amount) private {
+        addrToUser[userAddr].params[index] += amount;
     }
 
-    /**
-     * @dev Set bonus for pure usernames.
-     */
-    function setBonus(uint256 _bonus) public onlyOwner {
-        bonus = _bonus;
-    }
+    // /**
+    //  * @dev Set sign in fee for pure usernames.
+    //  */
+    // function setPureNameFee(uint256 _fee) public onlyDAO {
+    //     pureNameFee = _fee;
+    // }
 
     /**
      * @dev Owner of the contract can upgrade a user to VIP status.
      */
-    function upgradeToVIP(address userAddr) external onlyOwner {
+    function upgradeToVIP(address userAddr) external onlyDAO {
         require(registered(userAddr), "no user by this address");
         addrToUser[userAddr].isVIP = true;
     }
 
-    /**
-     * @dev Withdraw supply by owner of the contract.
-     */
-    function withdraw(address receiverAddress) external onlyOwner {
-        address payable receiver = payable(receiverAddress);
-        receiver.transfer(address(this).balance);
-    }
-
-    /**
-     * @dev Chenge LOTT Token address by owner of the contract.
-     */
-    function newLOTT(address LOTTAddr) public onlyOwner {
-        LOTT = ILOTT(LOTTAddr);
-    }
-
-    /**
-     * @dev Chenge DAOContract by owner of the contract.
-     */
-    function newDAOContract(address contractAddr) public onlyOwner {
-        DAOContract = contractAddr;
-    }
 }

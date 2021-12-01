@@ -9,23 +9,11 @@ pragma solidity ^0.8.7;
 //   ███████  ██████     ██       ██    ██ ███████ ██ ██   ████ ██   ██    
 // ======================================================================
 //  ================ Open source smart contract on EVM =================
-//   =============== Verify Random Function by ChanLink ===============
+//   ============== Verify Random Function by ChainLink ===============
 
 
-import "../ERC20/ILOTT.sol";
+import "./Iregister.sol";
 
-contract DAO{
-    
-    uint256 amount1;
-    uint256 amount2;
-    uint256 amount3;
+abstract contract RegisterMeta is Iregister{
 
-    function callContract(address contractAddr, bytes data){
-        
-    }
-
-
-    function registerSign(address signer, address presenter, bool pureSign) public returns(string memory){
-
-    }
 }

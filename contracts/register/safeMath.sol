@@ -9,23 +9,15 @@ pragma solidity ^0.8.7;
 //   ███████  ██████     ██       ██    ██ ███████ ██ ██   ████ ██   ██    
 // ======================================================================
 //  ================ Open source smart contract on EVM =================
-//   =============== Verify Random Function by ChanLink ===============
+//   ============== Verify Random Function by ChainLink ===============
 
+library safeMath {
 
-import "../ERC20/ILOTT.sol";
-
-contract DAO{
-    
-    uint256 amount1;
-    uint256 amount2;
-    uint256 amount3;
-
-    function callContract(address contractAddr, bytes data){
-        
+    function arraySub(uint256[] memory arr, uint256 index, uint256 amount) internal pure {
+        arr[index] -= amount;
     }
 
-
-    function registerSign(address signer, address presenter, bool pureSign) public returns(string memory){
-
+    function arrayAdd(uint256[] memory arr, uint256 index, uint256 amount) internal pure {
+        arr[index] += amount;
     }
 }
