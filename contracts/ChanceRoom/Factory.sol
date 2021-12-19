@@ -42,7 +42,7 @@ contract Factory is Ownable {
         address _randomNumberConsumer,
         address _NFTContractAddress,
         address _chanceRoomLibrary,
-        address _LOTTAddress
+        address _LOTTAddress,
         uint256 _cloneFee
     ) {
         registerContract = _registerContract;

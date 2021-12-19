@@ -18,17 +18,33 @@ async function main() {
   
     // console.log("Owner address:", deployer.address);
 
-    const ERC20PermitSimple = await ethers.getContractFactory("ERC20PermitSimple");
-    const permitSimple = await ERC20PermitSimple.deploy();
-    console.log("permitSimple Contract Address:", permitSimple.address);
+    // const ERC20PermitSimple = await ethers.getContractFactory("ERC20PermitSimple");
+    // const permitSimple = await ERC20PermitSimple.deploy();
+    // console.log("permitSimple Contract Address:", permitSimple.address);
 
-    // const Register = await ethers.getContractFactory("Register");
-    // const R = await Register.deploy("0x0000000000000000000000000000000000000000", "100000000000000000");
-    // console.log("Register Contract Address:", R.address);
+    // const DAO = await ethers.getContractFactory("DAO");
+    // const D = await DAO.deploy();
+    // console.log("DAO Contract Address:", D.address);
+
+    // const LOTTPublicNFT = await ethers.getContractFactory("LOTTPublicNFT");
+    // const LOTPUB = await LOTTPublicNFT.deploy();
+    // console.log("LOTTPublicNFT Contract Address:", LOTPUB.address);
+
+    const NFTMarket = await ethers.getContractFactory("NFTMarket");
+    const NM = await NFTMarket.deploy();
+    console.log("NFTMarket Contract Address:", NM.address);
+
+    // const UserData = await ethers.getContractFactory("UserData");
+    // const UD = await UserData.deploy();
+    // console.log("UserData Contract Address:", UD.address);
 
     // const Consumer = await ethers.getContractFactory("RandomNumberConsumer");
     // const RNC = await Consumer.deploy();
     // console.log("Random Number Consumer Contract Address:", RNC.address);
+
+    // const Register = await ethers.getContractFactory("Register");
+    // const R = await Register.deploy();
+    // console.log("Register Contract Address:", R.address);
 
     // const NFTContract = await ethers.getContractFactory("MyToken");
     // const NFT = await NFTContract.deploy();

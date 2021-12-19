@@ -11,208 +11,159 @@ pragma solidity ^0.8.7;
 //  ================ Open source smart contract on EVM =================
 //   ============== Verify Random Function by ChainLink ===============
 
+import "./UserData.sol";
+import "../DAO/DAOCall.sol";
 import "../utils/StringUtil.sol";
-import "./Iregister.sol";
-import "./DecentralOwnable";
 
-contract Register is Iregister, DecentralOwnable{
+
+contract Register is DAOCall{
 
     using StringUtil for string;
 
-
-    address public DAOContract;
-    // uint256 public pureNameFee;
-
-    struct User{
-        string username;
-        string info;
-        address presenter;
-        bytes DAOInfo;
-        bool isVIP;
-        uint256[] params;
-    }
-
-    mapping(address => User) public addrToUser;
-    mapping(string => address) public userToAddr;
-
-
-
-
     /**
-     * @dev See {Iregister-registered}.
+     * @dev returns the eternal contract which holds all users registered data.
      */
-    function registered(address userAddr) public view returns(bool) {
-        return bytes(addrToUser[userAddr].username).length != 0;
+    function userData() public view returns(UserData){
+        return UserData(DAOGetAddress(keccak256("UserData")));
     }
 
     /**
-     * @dev See {Iregister-registered}.
+     * @dev returns true if the user has been registered. (by `username`)
      */
     function registered(string memory username) public view returns(bool) {
-        return userToAddr[username.lower()] != address(0);
+        return userData().userAddress(username.lower()) != address(0);
     }
 
     /**
-     * @dev See {Iregister-isPure}.
+     * @dev returns true if the user has been registered. (by user `address`)
      */
-    function isPure(address userAddr) external view returns(bool){
-        return registered(userAddr) 
-        && bytes(addrToUser[userAddr].username)[0] != bytes1("_");
+    function registered(address userAddr) public view returns(bool) {
+        return bytes(userData().getString(userAddr, keccak256("username"))).length > 0;
     }
 
     /**
-     * @dev See {Iregister-isVIP}.
-     */
-    function isVIP(address userAddr) external view returns(bool){
-        return registered(userAddr)  
-        && addrToUser[userAddr].isVIP;
-    }
-
-    /**
-     * @dev See {Iregister-usernameToAddress}.
+     * @dev Returns the address `userAddr` of the `username`.
+     *
+     * Requirements:
+     *
+     * - `username` should be registered.
      */
     function usernameToAddress(string memory username) public view returns(address userAddr) {
-        require(registered(username), "no user by this username");
-        return userToAddr[username.lower()];
+        userAddr = userData().userAddress(username.lower());
+        require(userAddr != address(0), "no user by this username");
+        return userAddr;
     }
 
     /**
-     * @dev See {Iregister-addressToUsername}.
+     * @dev Returns the `username` of the address `userAddr`.
+     *
+     * Requirements:
+     *
+     * - address `userAddr` should be registered.
      */
     function addressToUsername(address userAddr) external view returns(string memory username) {
-        require(registered(userAddr), "no user by this address");
-        return addrToUser[userAddr].username;
+        string memory _username = userData().getString(userAddr, keccak256("username"));
+        require(bytes(_username).length > 0, "no user by this address");
+        return _username;
     }
 
     /**
-     * @dev See {Iregister-addressToProfile}.
+     * @dev Returns the `username` and `info` of the `userAddr`.
+     *
+     * Requirements:
+     *
+     * - address `userAddr` should be registered.
      */
     function addressToProfile(address userAddr) external view returns(
         string memory username,
-        string memory info,
-        bool VIPStatus
+        string memory userInfo
     ){
-        require(registered(userAddr), "no user by this address");
+        UserData UD = userData();
+        string memory _username = UD.getString(userAddr, keccak256("username"));
+        require(bytes(_username).length > 0, "no user by this address");
         return(
-            addrToUser[userAddr].username,
-            addrToUser[userAddr].info,
-            addrToUser[userAddr].isVIP
+            _username,
+            UD.getString(userAddr, keccak256("userInfo"))
         );
     }
 
     /**
-     * @dev See {Iregister-usernameToProfile}.
+     * @dev Returns address `userAddr` and `info` of the `username`.
+     *
+     * Requirements:
+     *
+     * - `username` should be registered.
      */
     function usernameToProfile(string memory username) external view returns(
         address userAddr,
-        string memory info,
-        bool VIPStatus
+        string memory userInfo
     ){
-        userAddr = usernameToAddress(username);
+        UserData UD = userData();
+        userAddr = UD.userAddress(username.lower());
+        require(userAddr != address(0), "no user by this username");
         return(
             userAddr,
-            addrToUser[userAddr].info,
-            addrToUser[userAddr].isVIP
+            UD.getString(userAddr, keccak256("userInfo"))
         );
     }
 
     /**
-     * @dev See {Iregister-signIn}.
+     * @dev Sign in the Register contract by adopting a `username` and optional info.
+     *
+     * pure sign fee is more than usual sign.
+     * Users can sign in usual by using `_` in the first character of `username`.
+     * new user can introduce a string username as `presenter`.
+     * 
+     * Requirements:
+     *
+     * - Every address can only sign one username.
+     * - Not allowed empty usernames.
+     * - User has to adopt a username not taken before.
      */
-    function signIn(string memory username, string memory info, string memory presenter) external payable {
-        address userAddr = _msgSender();
-        require(!registered(username), "this username has been used before");
+    function signIn(string memory username, string memory userInfo, string memory presenter) external payable {
+        UserData UD = userData();
+        address userAddr = msg.sender;
+        require(bytes(username).length > 0, "empty username input");
+        require(UD.userAddress(username.lower()) == address(0), "username taken");
 
         bool pureSign;
         if(bytes(username)[0] != bytes1("_")) {
             pureSign = true;
-            require(msg.value >= DAO.vars["registerPureFee"], "this username is Payable");
+            require(msg.value >= DAOGetUint(keccak256("pureRegisterFee")), "insufficient fee");
         } else {
-            require(msg.value >= DAO.vars["registerNormalFee"], "this username is Payable");
+            require(msg.value >= DAOGetUint(keccak256("normalRegisterFee")), "insufficient fee");
         }
 
-        _setUsername(userAddr, username);
+        require(bytes(UD.getString(userAddr, keccak256("username"))).length == 0, "registered before.");
+        UD.setUserAddress(username.lower(), userAddr);
+        UD.setString(userAddr, keccak256("username"), username);
 
-        emit TransferUsername(address(0), userAddr, username);
+        if(bytes(userInfo).length > 0) {
+            UD.setString(userAddr, keccak256("userInfo"), userInfo);
+        }
 
-        if(bytes(info).length > 0) {setInfo(info);}
-
-        address presenterAddr = userToAddr[presenter.lower()];
-        (bool success, bytes memory data) = DAOContract.call{value : msg.value}
+        address presenterAddr = UD.userAddress(presenter.lower());
+        (bool success, bytes memory data) = DAOGetAddress(keccak256("RegisterDAO")).call{value : msg.value}
             (abi.encodeWithSignature("registerSign(address, address, bool)", userAddr, presenterAddr, pureSign));
 
         if(success){
-            addrToUser[userAddr].DAOInfo = abi.decode(data, (string));
+            UD.setBytes(userAddr, "RegisterDAOData", data);
         }
     }
 
     /**
-     * @dev See {Iregister-setInfo}.
-     */
-    function setInfo(string memory info) public {
-        address userAddr = _msgSender();
-        require(registered(userAddr) , "you have to sign in first");
-        addrToUser[userAddr].info = info;
-        emit SetInfo(userAddr, info);
-    }
-
-    /**
-     * @dev See {Iregister-transferUsername}.
-     */
-    function transferUsername(address _to, bool resetHistory) external {
-        address _from = _msgSender();
-        string memory username = addressToUsername(_from);
-
-        userToAddr[username.lower()] = _to;
-
-        if (_to != address(0)){
-            if (resetHistory) {
-                addrToUser[_to].username = username;
-            } else {
-                addrToUser[_to] = addrToUser[_from];
-            }
-        }
-        delete addrToUser[_from];
-
-        emit TransferUsername(_from, _to, username, resetHistory);
-    }
-
-    /**
-     * @dev set a `username` to a `userAddr`.
-     * 
+     * @dev in addition to the username, every user can set personal info.
+     *
+     * To remove previously info, it can be called by empty string input.
+     *
      * Requirements:
      *
-     * - Not allowed empty usernames.
-     * - user should not be registered before.
+     * - The user has to register first.
      */
-    function _setUsername(address userAddr, string memory username) private {
-        require(bytes(username).length > 0, "empty username input");
-        require(!registered(userAddr) , "this address has signed a username before");
-        addrToUser[userAddr].username = username;
-        userToAddr[username.lower()] = userAddr;
+    function setInfo(string memory userInfo) public {
+        UserData UD = userData();
+        address userAddr = msg.sender;
+        require(bytes(UD.getString(userAddr, keccak256("username"))).length > 0 , "you have to sign in first");
+        UD.setString(userAddr, keccak256("userInfo"), userInfo);
     }
-
-    function _userSubParam(address userAddr, uint256 index, uint256 amount) private {
-        addrToUser[userAddr].params[index] -= amount;
-    }
-
-    function _userAddParam(address userAddr, uint256 index, uint256 amount) private {
-        addrToUser[userAddr].params[index] += amount;
-    }
-
-    // /**
-    //  * @dev Set sign in fee for pure usernames.
-    //  */
-    // function setPureNameFee(uint256 _fee) public onlyDAO {
-    //     pureNameFee = _fee;
-    // }
-
-    /**
-     * @dev Owner of the contract can upgrade a user to VIP status.
-     */
-    function upgradeToVIP(address userAddr) external onlyDAO {
-        require(registered(userAddr), "no user by this address");
-        addrToUser[userAddr].isVIP = true;
-    }
-
 }

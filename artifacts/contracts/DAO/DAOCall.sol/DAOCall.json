@@ -1,0 +1,138 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "DAOCall",
+  "sourceName": "contracts/DAO/DAOCall.sol",
+  "abi": [
+    {
+      "inputs": [],
+      "name": "DAO",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "DAOAddr",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "tag",
+          "type": "bytes32"
+        }
+      ],
+      "name": "DAOGetAddress",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "data",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "tag",
+          "type": "bytes32"
+        }
+      ],
+      "name": "DAOGetBool",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "data",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "tag",
+          "type": "bytes32"
+        }
+      ],
+      "name": "DAOGetBytes",
+      "outputs": [
+        {
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "tag",
+          "type": "bytes32"
+        }
+      ],
+      "name": "DAOGetInt",
+      "outputs": [
+        {
+          "internalType": "int256",
+          "name": "data",
+          "type": "int256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "tag",
+          "type": "bytes32"
+        }
+      ],
+      "name": "DAOGetString",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "data",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "tag",
+          "type": "bytes32"
+        }
+      ],
+      "name": "DAOGetUint",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "data",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

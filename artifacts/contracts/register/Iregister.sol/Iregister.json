@@ -42,6 +42,12 @@
           "internalType": "string",
           "name": "username",
           "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "bool",
+          "name": "initialize",
+          "type": "bool"
         }
       ],
       "name": "TransferUsername",
@@ -175,19 +181,6 @@
       "inputs": [
         {
           "internalType": "string",
-          "name": "info",
-          "type": "string"
-        }
-      ],
-      "name": "setInfo",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "string",
           "name": "username",
           "type": "string"
         },
@@ -205,19 +198,6 @@
       "name": "signIn",
       "outputs": [],
       "stateMutability": "payable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_to",
-          "type": "address"
-        }
-      ],
-      "name": "transferUsername",
-      "outputs": [],
-      "stateMutability": "nonpayable",
       "type": "function"
     },
     {

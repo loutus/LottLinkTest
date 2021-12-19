@@ -11,47 +11,47 @@ pragma solidity ^0.8.7;
 //  ================ Open source smart contract on EVM =================
 //   =============== Verify Random Function by ChanLink ===============
 
+import "../DAO/DAOCall.sol";
 import "../ERC20/ILOTT.sol";
 
-contract RegisterDAO{
-    
-    ILOTT LOTT;
+contract RegisterDAO is DAOCall{
 
-    mapping (string => uint256) public vars;
-
-    address registerContract;
-
-    function setVariable(string[] memory VarName, uint256[] value) public {
-        for (uint256 index = 0; index < value.length; index++){
-            vars(varName[index]) = value[index];
-        }
+    function LOTTToken() public view returns(ILOTT){
+        address LOTTAddress = DAOGetAddress(keccak256("LOTT"));
+        return ILOTT(LOTTAddress);
     }
 
-    function newRegisterAddress(address contractAddr) public {
-        registerContract = contractAddr;
-    }
-
-    function newLOTTAddress(address contractAddr) public {
-        LOTT = ILOTT(contractAddr);
-    }
-
-    function updateDAO(address contractAddr, address _newDAO){
-        (bool success, bytes memory data) = contractAddr.call(abi.encode("newDAO(address)",  _newDAO));
-    }
-
-
-    function callContract(address contractAddr, bytes inputData){
-        (bool success, bytes memory data) = registerContract.call(inputData);
-    }
-
-
-    function registerSign(address signer, address presenter, bool pureSign) public returns(string memory){
+    function registerSign(address signer, address presenter, bool pureSign) 
+        public
+        payable
+        returns(bool completed)
+    {
+        ILOTT LOTT = LOTTToken();
         if(pureSign) {
-            LOTT.mint(signer, bonus1);
-            LOTT.mint(presenter, bonus2);
+            LOTT.mint(signer, DAOGetUint(keccak256("pureSignBonus")));
         } else {
-            LOTT.mint(signer, bonus3);
-            LOTT.mint(presenter, bonus3);
+            LOTT.mint(presenter, DAOGetUint(keccak256("normalSignBonus")));
+        } if(presenter != address(0)) {
+            LOTT.mint(presenter, DAOGetUint(keccak256("presenterBonus")));
         }
+        return true;
+    }
+
+    /**
+     * @dev Returns Ether supply of the contract
+     */
+    function EthSupply() public view returns(uint256){
+        return address(this).balance;
+    }
+
+    /**
+     * @dev Withdraw Eth paid by users
+     *
+     * Requirements:
+     *
+     * - only roll `withdrawAccess` can call this function.
+     */
+    function withdrawEth(address payable receiver, uint256 amount) external {
+        receiver.transfer(amount);
     }
 }

@@ -51,7 +51,7 @@ interface Iregister {
      *
      * Requirements:
      *
-     * - `username` must be registered.
+     * - `username` should be registered.
      */
     function usernameToAddress(string memory username) external view returns(address userAddr);
 
@@ -60,7 +60,7 @@ interface Iregister {
      *
      * Requirements:
      *
-     * - address `userAddr` must be registered before.
+     * - address `userAddr` should be registered before.
      */
     function addressToUsername(address userAddr) external view returns(string memory username);
 
@@ -70,7 +70,7 @@ interface Iregister {
      *
      * Requirements:
      *
-     * - address `userAddr` must be registered before.
+     * - address `userAddr` should be registered before.
      */
     function addressToProfile(address userAddr) external view returns(
         string memory username,
@@ -83,7 +83,7 @@ interface Iregister {
      *
      * Requirements:
      *
-     * - `username` must be registered before.
+     * - `username` should be registered.
      */
     function usernameToProfile(string memory username) external view returns(
         address userAddr,
@@ -101,7 +101,7 @@ interface Iregister {
      *
      * - Every address can only sign one username.
      * - Not allowed empty usernames.
-     * - Usernames are unique so new user has to adopt a username not used before.
+     * - User has to adopt a username not taken before.
      *
      * Emits a {SignIn} event.
      */
@@ -118,7 +118,7 @@ interface Iregister {
      *
      * Emits a {SetInfo} event.
      */
-    function setInfo(string memory info) external;
+    // function setInfo(string memory info) external;
 
     /**
      * @dev the user can transfer its username to another address.
@@ -132,5 +132,27 @@ interface Iregister {
      *
      * Emits a {TransferUsername} event.
      */
-    function transferUsername(address _to, bool initialize) external;
+    // function transferUsername(address _to, bool initialize) external;
+
+    /**
+     * @dev See {Iregister-transferUsername}.
+     */
+    // function transferUsername(address _to, bool resetHistory) external {
+    //     address _from = msg.sender;
+    //     string memory username = addressToUsername(_from);
+    //     UserData data = userData();
+
+    //     data.userToAddr[username.lower()] = _to;
+
+    //     if (_to != address(0)){
+    //         if (resetHistory) {
+    //             data.addrToUser[_to].username = username;
+    //         } else {
+    //             data.addrToUser[_to] = addrToUser[_from];
+    //         }
+    //     }
+    //     delete addrToUser[_from];
+
+    //     emit TransferUsername(_from, _to, username, resetHistory);
+    // }
 }
