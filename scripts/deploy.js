@@ -1,5 +1,5 @@
-const { ethers } = require("hardhat");
-// const { exec } = require("child_process");
+// const { ethers } = require("hardhat");
+const { ethers, upgrades } = require("hardhat");
 
 // const execCommand = (command)=>{
 //   exec(command, (error, stdout, stderr) => {
@@ -22,6 +22,32 @@ async function main() {
     // const permitSimple = await ERC20PermitSimple.deploy();
     // console.log("permitSimple Contract Address:", permitSimple.address);
 
+    // const ERC20UUPS = await ethers.getContractFactory("ERC20UUPS");
+    // const UUPS = await ERC20UUPS.deploy();
+    // console.log("ERC20UUPS Contract Address:", UUPS.address);
+
+    // const CrossChainDAO = await ethers.getContractFactory("CrossChainDAO");
+    // const CChDAO = await CrossChainDAO.deploy();
+    // console.log("CrossChainDAO Contract Address:", CChDAO.address);
+
+    const CrossChainNFT = await ethers.getContractFactory("CrossChainNFT");
+    const CCh = await CrossChainNFT.deploy();
+    console.log("CrossChainNFT Contract Address:", CCh.address);
+
+    // const NFTTransparent = await ethers.getContractFactory("NFTTransparent");
+    // const Transparent = await upgrades.deployProxy(NFTTransparent);
+    // await Transparent.deployed();
+    // console.log("NFTTransparent Contract Address:", Transparent.address);
+
+    // const NFTTransparent2 = await ethers.getContractFactory("NFTTransparent");
+    // const upgraded = await upgrades.upgradeProxy("0x65A52682Df507552d37FC2235eF2bC7FfD4BF181", NFTTransparent2);
+    // console.log("upgraded.");
+
+
+    // const TransparentUpgradeableProxy = await ethers.getContractFactory("TransparentUpgradeableProxy");
+    // const TP = await TransparentUpgradeableProxy.deploy("0xb8d7e8Bc9F8D50d37677cF007c2a4dBe685497D3", "0xc92a7Cf349dD3897c23BbB2BF8150A30d9EbaD58");
+    // console.log("TransparentUpgradeableProxy Contract Address:", TP.address);
+
     // const DAO = await ethers.getContractFactory("DAO");
     // const D = await DAO.deploy();
     // console.log("DAO Contract Address:", D.address);
@@ -30,9 +56,9 @@ async function main() {
     // const LOTPUB = await LOTTPublicNFT.deploy();
     // console.log("LOTTPublicNFT Contract Address:", LOTPUB.address);
 
-    const NFTMarket = await ethers.getContractFactory("NFTMarket");
-    const NM = await NFTMarket.deploy();
-    console.log("NFTMarket Contract Address:", NM.address);
+    // const NFTMarket = await ethers.getContractFactory("NFTMarket");
+    // const NM = await NFTMarket.deploy();
+    // console.log("NFTMarket Contract Address:", NM.address);
 
     // const UserData = await ethers.getContractFactory("UserData");
     // const UD = await UserData.deploy();

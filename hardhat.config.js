@@ -1,5 +1,7 @@
 require("@nomiclabs/hardhat-waffle");
 require("@nomiclabs/hardhat-etherscan");
+require('@openzeppelin/hardhat-upgrades');
+
 const { PRIVATE_KEY, ALCHEMY_API_KEY, POLYGONSCAN_API_KEY } = require('./secret.json');
 
 module.exports = {
